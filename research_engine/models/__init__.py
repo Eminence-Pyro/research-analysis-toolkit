@@ -1,16 +1,61 @@
 """
 research_engine/models/
-The domain model — the core language of the Research Analysis Toolkit.
+Stage 1 — Core Domain Model
 
-Every other package (parsers, generators, validators, exporters, analysis,
-reports) works with objects defined here. Nothing in this package depends
-on any other package in the project.
+The domain layer — the language of the Research Analysis Toolkit.
 
-Modules
--------
-variable.py        — Variable, MeasurementScale, VariableDictionary
-questionnaire.py   — Questionnaire, Section, Question
-study.py           — Study, Facility
-respondent.py      — Respondent, Response
-dataset.py         — Dataset
+All domain objects are importable directly from this package:
+
+    from research_engine.models import (
+        # Variables
+        Variable, MeasurementScale, MissingValueStrategy, VariableDictionary,
+        # Questionnaire
+        Question, QuestionType, Section, Questionnaire,
+        LIKERT_5_LABELS, LIKERT_5_AGREEMENT, LIKERT_5_FREQUENCY,
+        # Study
+        Facility, Study, StudyDesign, SamplingTechnique,
+        # Respondent
+        Response, Observation, Respondent,
+        # Dataset
+        Dataset,
+    )
+
+Dependency rule: This package has zero dependencies on any other
+package within research_engine. All other packages depend on this one.
 """
+from research_engine.models.variable import (
+    Variable,
+    MeasurementScale,
+    MissingValueStrategy,
+    VariableDictionary,
+)
+from research_engine.models.questionnaire import (
+    Question,
+    QuestionType,
+    Section,
+    Questionnaire,
+    LIKERT_5_LABELS,
+    LIKERT_5_AGREEMENT,
+    LIKERT_5_FREQUENCY,
+)
+from research_engine.models.study import (
+    Facility,
+    Study,
+    StudyDesign,
+    SamplingTechnique,
+)
+from research_engine.models.respondent import (
+    Response,
+    Observation,
+    Respondent,
+)
+from research_engine.models.dataset import Dataset
+
+__all__ = [
+    "Variable", "MeasurementScale", "MissingValueStrategy", "VariableDictionary",
+    "Question", "QuestionType", "Section", "Questionnaire",
+    "LIKERT_5_LABELS", "LIKERT_5_AGREEMENT", "LIKERT_5_FREQUENCY",
+    "Facility", "Study", "StudyDesign", "SamplingTechnique",
+    "Response", "Observation", "Respondent",
+    "Dataset",
+]
