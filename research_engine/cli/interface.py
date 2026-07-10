@@ -125,32 +125,86 @@ Examples:
 # ── Command handlers ──────────────────────────────────────────
 
 def cmd_run(args, studies_root: Path, output_root: Path) -> int:
-    """Run the full pipeline for a study."""
+    """Run the full pipeline for a study via the Pipeline orchestrator."""
     study_dir = studies_root / args.study
     if not study_dir.exists():
-        print(red(f"\n  Error: Study '{args.study}' not found in {studies_root}/"))
+        print(red(f"
+  Error: Study '{args.study}' not found in {studies_root}/"))
         print(dim(f"  Run 'python main.py list' to see available studies."))
         return 1
 
     output_dir = Path(args.output) if args.output else output_root / args.study
 
-    # Dynamically import the study runner
-    import importlib.util
-    run_file = study_dir / "run.py"
-    spec     = importlib.util.spec_from_file_location(f"studies.{args.study}.run", run_file)
-    module   = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    # Load study-specific maps from run.py if present
+    ordinal_maps, spss_maps, crosstab_pairs = _load_study_config(study_dir)
 
-    # Patch OUTPUT_DIR if --output was specified
-    if args.output:
-        module.OUTPUT_DIR = output_dir
+    from research_engine.workflow import Pipeline
 
     print(BANNER)
-    t_start = time.time()
-    module.run(seed=args.seed)
-    elapsed = time.time() - t_start
-    print(dim(f"  Total time: {elapsed:.1f}s"))
+    t = time.time()
+    pipeline = Pipeline(
+        study_dir      = study_dir,
+        output_dir     = output_dir,
+        seed           = args.seed,
+        ordinal_maps   = ordinal_maps,
+        spss_maps      = spss_maps,
+        crosstab_pairs = crosstab_pairs,
+    )
+
+    # Stream progress
+    print(f"
+  Running pipeline for: {bold(args.study)}  (seed={args.seed})")
+    steps = [
+        ("Loading study configuration",    pipeline.load),
+        ("Generating dataset",              pipeline.generate),
+        ("Validating",                      pipeline.validate),
+        ("Running analysis",                pipeline.analyse),
+        ("Exporting files",                 pipeline.export),
+    ]
+    for label, fn in steps:
+        print(f"  {dim('..')} {label}", end="", flush=True)
+        fn()
+        print(f"  {green('✓')}  {label}             ")
+
+    result = pipeline.run.__func__  # already ran above — build result manually
+    from research_engine.workflow.pipeline import PipelineResult
+    elapsed = time.time() - t
+
+    # Print results
+    print(f"
+  {bold('Validation:')} {green(pipeline.report.summary())}")
+    for check in pipeline.report.checks:
+        icon = {"pass": green("  ✓"), "warn": yellow("  ⚠"), "error": red("  ✗")}[check.status]
+        print(f"{icon}  {check.message}")
+
+    print(f"
+  {bold('Output files:')}")
+    for f in pipeline.output_files:
+        print(f"    {green('→')} {f.name}")
+
+    print(f"
+  {dim(f'Total: {elapsed:.1f}s')}")
     return 0
+
+
+def _load_study_config(study_dir: Path) -> tuple:
+    """Load ORDINAL_MAPS, SPSS_MAPS, CROSSTAB_PAIRS from study run.py if present."""
+    run_file = study_dir / "run.py"
+    if not run_file.exists():
+        return {}, {}, []
+    try:
+        import importlib.util
+        spec   = importlib.util.spec_from_file_location("_study_run", run_file)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return (
+            getattr(module, "ORDINAL_MAPS",   {}),
+            getattr(module, "SPSS_MAPS",      {}),
+            getattr(module, "CROSSTAB_PAIRS", []),
+        )
+    except Exception:
+        return {}, {}, []
+
 
 
 def cmd_list(studies_root: Path) -> int:
