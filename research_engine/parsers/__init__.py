@@ -1,7 +1,29 @@
 """
 research_engine/parsers/
-Reads external formats (Word, Excel, JSON) and returns domain model objects.
+Stage 2 — Readers (Input Layer)
 
-Depends on: research_engine/models/
-Does NOT depend on: generators, validators, exporters, analysis, reports
+Reads external formats (JSON, Word, Excel, CSV) and returns domain objects.
+
+Public API
+----------
+    from research_engine.parsers import load_all, load_study, load_questionnaire
+    from research_engine.parsers import StudyBundle
+
+All parsers produce domain objects defined in research_engine.models.
+They never return raw dicts, DataFrames, or file handles to callers.
 """
+from research_engine.parsers.json_loader import (
+    load_all,
+    load_study,
+    load_questionnaire,
+    load_variable_dictionary,
+    StudyBundle,
+)
+
+__all__ = [
+    "load_all",
+    "load_study",
+    "load_questionnaire",
+    "load_variable_dictionary",
+    "StudyBundle",
+]
