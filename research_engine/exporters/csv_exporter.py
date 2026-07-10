@@ -17,14 +17,11 @@ from research_engine.models import Dataset, VariableDictionary
 
 
 def export_raw(
-    dataset:   Dataset,
-    output_dir: str | Path,
+    dataset:     Dataset,
+    output_dir:  str | Path,
     study_title: str = "",
 ) -> Path:
-    """
-    Write a raw CSV with labelled values and return the file path.
-    One row per respondent. All variables included.
-    """
+    """Write a raw CSV with labelled values and return the file path."""
     out  = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
     ts   = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -45,26 +42,15 @@ def export_raw(
 
 
 def export_spss(
-    dataset:    Dataset,
-    output_dir: str | Path,
-    spss_maps:  dict[str, dict[str, int]],
-    vd:         VariableDictionary | None = None,
+    dataset:     Dataset,
+    output_dir:  str | Path,
+    spss_maps:   dict[str, dict[str, int]],
+    vd:          VariableDictionary | None = None,
     study_title: str = "",
 ) -> Path:
     """
     Write a numeric-only SPSS-ready CSV and return the file path.
-
-    Categorical string values are replaced with their numeric SPSS codes.
-    Column names are truncated to 8 characters (SPSS legacy limit) and uppercased.
-    A companion .txt label file is written alongside the CSV.
-
-    Parameters
-    ----------
-    dataset     : the Dataset
-    output_dir  : output directory
-    spss_maps   : {field_name: {label: numeric_code}}
-    vd          : VariableDictionary — used for column labels in the companion file
-    study_title : used in filenames
+    Also writes a companion .txt label file listing variable codes.
     """
     out  = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -88,7 +74,6 @@ def export_spss(
             elif isinstance(v, str) and v in ("Yes", "No"):
                 out_row[spss_key] = 1 if v == "Yes" else 0
             else:
-                # Try numeric conversion; fall back to missing code 9
                 try:
                     out_row[spss_key] = float(v)
                 except (ValueError, TypeError):
@@ -101,20 +86,16 @@ def export_spss(
         writer.writeheader()
         writer.writerows(encoded)
 
-    # Write companion label file
+    # Companion label file
     label_path = out / f"{slug}_spss_labels_{ts}.txt"
-    lines = ["SPSS Variable Labels
-", "=" * 40 + "
-"]
+    label_lines = ["SPSS Variable Labels\n", "=" * 40 + "\n"]
     if vd:
-        for v in vd:
-            short = v.name.upper()[:8]
-            lines.append(f"{short:<10} = {v.label}
-")
-            if v.spss_codes:
-                for label, code in v.spss_codes.items():
-                    lines.append(f"           {code} = {label}
-")
-    label_path.write_text("".join(lines), encoding="utf-8")
+        for variable in vd:
+            short = variable.name.upper()[:8]
+            label_lines.append(f"{short:<10} = {variable.label}\n")
+            if variable.spss_codes:
+                for lbl, code in variable.spss_codes.items():
+                    label_lines.append(f"           {code} = {lbl}\n")
+    label_path.write_text("".join(label_lines), encoding="utf-8")
 
     return path
