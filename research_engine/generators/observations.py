@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from research_engine.models import Respondent, Observation
+from research_engine.models import Respondent, Observation, Response
 
 
 def generate(
@@ -121,8 +121,5 @@ def _generate_for_respondent(
         ))
 
     # Total yes count as an observation
-    respondent.add_observation(Observation(
-        variable_name = "obs_yes_count",
-        value         = str(yes_count),
-        facility_id   = respondent.facility_id,
-    ))
+    # obs_yes_count stored as a Response (int) so analysis/validator can access it
+    respondent.add_response(Response(variable_name="obs_yes_count", value=yes_count))
