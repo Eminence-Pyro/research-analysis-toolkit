@@ -1,7 +1,13 @@
 """
 research_engine/validators/
-Checks Dataset and domain objects for statistical and logical consistency.
+Stage 8 — Validation Engine
 
-Depends on: research_engine/models/
-Does NOT depend on: parsers, generators, exporters, analysis, reports
+Checks Dataset and domain objects for statistical and logical integrity.
+
+Public API
+----------
+    from research_engine.validators import validate, ValidationReport
 """
+from research_engine.validators.dataset_validator import validate, ValidationReport
+
+__all__ = ["validate", "ValidationReport"]
