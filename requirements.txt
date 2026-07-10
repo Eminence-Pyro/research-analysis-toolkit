@@ -1,16 +1,24 @@
-# Core scientific stack
+# ── Scientific stack ─────────────────────────────────────────
 numpy>=1.26
 pandas>=2.2
 scipy>=1.12
 
-# Excel read/write
+# ── Excel ─────────────────────────────────────────────────────
 openpyxl>=3.1
 
-# Fake personal data (names etc.)
-Faker>=25.0
+# ── Word document export (v1.2) ───────────────────────────────
+python-docx>=1.1
 
-# Reporting (optional PDF generation)
+# ── PDF export (v1.2) ─────────────────────────────────────────
 reportlab>=4.2
 
-# CLI progress (optional)
+# ── Data parsing ──────────────────────────────────────────────
+Faker>=25.0
+
+# ── Terminal output ───────────────────────────────────────────
 rich>=13.7
+
+# ── Web interface (v2.0) — optional ───────────────────────────
+# streamlit>=1.35
+# fastapi>=0.111
+# uvicorn>=0.29
