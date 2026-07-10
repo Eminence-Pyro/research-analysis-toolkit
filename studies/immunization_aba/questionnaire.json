@@ -1,0 +1,62 @@
+{
+  "title": "Caregiver Satisfaction with Immunization Services Questionnaire",
+  "scale": {
+    "1": "Very Dissatisfied",
+    "2": "Dissatisfied",
+    "3": "Neutral",
+    "4": "Satisfied",
+    "5": "Very Satisfied"
+  },
+  "sections": {
+    "A": {
+      "title": "Satisfaction with Reception / Registration",
+      "items": [
+        "Staff greeted you courteously",
+        "Registration process was quick",
+        "Waiting area was comfortable",
+        "You were given adequate information on arrival",
+        "Staff attended to you promptly"
+      ]
+    },
+    "B": {
+      "title": "Satisfaction with Immunization Services",
+      "items": [
+        "Vaccines were available when needed",
+        "Vaccine administration was done correctly",
+        "You were informed about the vaccines given",
+        "You were told about next appointment / return date",
+        "Side effects were explained adequately"
+      ]
+    },
+    "C": {
+      "title": "Satisfaction with Staff Attitude",
+      "items": [
+        "Staff were polite and respectful",
+        "Staff communicated clearly in language you understood",
+        "Staff showed concern for your child",
+        "Staff answered your questions satisfactorily",
+        "Staff maintained confidentiality"
+      ]
+    },
+    "D": {
+      "title": "Satisfaction with Physical Environment",
+      "items": [
+        "The facility was clean and tidy",
+        "The facility was well ventilated",
+        "The facility had adequate seating",
+        "The toilets / conveniences were clean",
+        "The facility felt safe for your child"
+      ]
+    },
+    "E": {
+      "title": "Overall Satisfaction and Intention to Return",
+      "items": [
+        "Overall, I am satisfied with immunization services at this facility",
+        "I would recommend this facility to others",
+        "I intend to return to this facility for subsequent immunizations",
+        "Waiting time was acceptable",
+        "I received value for my time at this facility"
+      ]
+    }
+  }
+}
