@@ -13,8 +13,11 @@ build/
 venv/
 env/
 
-# Output (generated files — not committed)
+# Generated output — never commit
 output/
+
+# Uploaded study inputs — may contain sensitive data
+studies/*/input/
 
 # IDE
 .vscode/
