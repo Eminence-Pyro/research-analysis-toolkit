@@ -1,175 +1,143 @@
 """
 studies/immunization_aba/run.py
 
-Study-specific runner for:
-  "Pattern of Patient (Caregiver) Satisfaction with Immunization Services
-   at Urban Primary Health Centers in Wards I–IV, Aba North LGA, Abia State"
+Study runner for:
+  "Pattern of Caregiver Satisfaction with Immunization Services
+   at Urban PHCs, Wards I-IV, Aba North LGA, Abia State"
 
-This file is the ONLY thing you need to touch to customise the run.
-The core generator modules in rdg/core/ are untouched.
+This file wires together the research_engine domain layer:
+  1. json_loader   → Study, Questionnaire, VariableDictionary
+  2. generators    → Respondents, Responses, Observations  → Dataset
+  3. validators    → ValidationReport
+  4. exporters     → Excel, CSV, SPSS  (Stage 10 — wired when ready)
+
+To adapt this runner for a different study, copy this folder, rename it,
+replace the JSON config files, and update ORDINAL_MAPS and SPSS_MAPS.
+No changes to research_engine/ are needed.
 """
 from __future__ import annotations
 from pathlib import Path
+import time
 import numpy as np
 
-from rdg.core import demographics as demo_gen
-from rdg.core import questionnaire as q_gen
-from rdg.core import observation   as obs_gen
-from rdg.core import validator
-from rdg.core import exporter
-from studies.immunization_aba.config import (
-    STUDY_TITLE, STUDY_SETTING, N_RESPONDENTS,
-    FACILITIES, RESPONDENTS_PER_FACILITY, FACILITY_EFFECTS,
+from research_engine.parsers    import load_all
+from research_engine.generators import (
+    generate_respondents, generate_responses, generate_observations,
 )
+from research_engine.models     import Dataset
+from research_engine.validators import validate
 
 STUDY_DIR  = Path(__file__).parent
 OUTPUT_DIR = Path(__file__).parent.parent.parent / "output" / "immunization_aba"
 
-# Ordinal encoding maps for demographics
+# Ordinal rank maps — must match the categories in demographics.json
 ORDINAL_MAPS = {
     "education": {
-        "No formal education": 1,
-        "Primary":             2,
-        "Secondary":           3,
-        "Tertiary":            4,
+        "No formal education": 1, "Primary": 2,
+        "Secondary": 3, "Tertiary": 4,
     },
     "income_monthly_naira": {
-        "No income (<10,000)":      1,
-        "Low (10,000\u201330,000)": 2,
-        "Middle (30,001\u201370,000)": 3,
-        "High (>70,000)":           4,
+        "No income (<10,000)": 1, "Low (10,000-30,000)": 2,
+        "Middle (30,001-70,000)": 3, "High (>70,000)": 4,
     },
     "previous_visits": {
-        "1 (first visit)": 1,
-        "2\u20133":        2,
-        "4\u20135":        3,
-        "6+":             4,
+        "1 (first visit)": 1, "2-3": 2, "4-5": 3, "6+": 4,
     },
 }
 
-# SPSS numeric encoding maps (for every categorical field)
-SPSS_MAPS = {
-    "gender":         {"Male": 1, "Female": 2},
-    "marital_status": {"Married":1,"Single":2,"Widowed":3,"Divorced/Separated":4},
-    "education":      {"No formal education":1,"Primary":2,"Secondary":3,"Tertiary":4},
-    "occupation":     {"Trader/Business":1,"Civil servant":2,"Housewife":3,
-                       "Student":4,"Artisan":5,"Unemployed":6},
-    "income_monthly_naira": {
-        "No income (<10,000)":1,"Low (10,000\u201330,000)":2,
-        "Middle (30,001\u201370,000)":3,"High (>70,000)":4,
-    },
-    "number_of_children": {"1":1,"2":2,"3":3,"4":4,"5+":5},
-    "previous_visits":    {"1 (first visit)":1,"2\u20133":2,"4\u20135":3,"6+":4},
-    "satisfaction_category": {
-        "Highly Dissatisfied":1,"Dissatisfied":2,"Neutral":3,
-        "Satisfied":4,"Highly Satisfied":5,
-    },
-}
 
-CODEBOOK = [
-    ("respondent_id",      "Respondent ID",             "String",  "Nominal", "R001–R120",        "Unique identifier"),
-    ("age",                "Age of respondent",          "Integer", "Scale",   "18–55",            "Years"),
-    ("gender",             "Gender",                     "String",  "Nominal", "Male/Female",      ""),
-    ("marital_status",     "Marital status",             "String",  "Nominal", "4 categories",     ""),
-    ("education",          "Highest education level",    "String",  "Ordinal", "4 levels",         ""),
-    ("education_rank",     "Education rank (numeric)",   "Integer", "Ordinal", "1–4",              "1=None, 4=Tertiary"),
-    ("occupation",         "Occupation",                 "String",  "Nominal", "6 categories",     ""),
-    ("income_monthly_naira","Monthly income (Naira)",    "String",  "Ordinal", "4 bands",          ""),
-    ("distance_to_facility_km","Distance to PHC (km)",  "Float",   "Scale",   "0.1–20",           "Exponential distribution"),
-    ("number_of_children", "Number of children",         "String",  "Ordinal", "1/2/3/4/5+",       ""),
-    ("child_age_months",   "Index child age (months)",   "Integer", "Scale",   "0–23",             ""),
-    ("previous_visits",    "Previous facility visits",   "String",  "Ordinal", "4 categories",     ""),
-    ("SAQ1–SEQ5",          "Questionnaire responses",    "Integer", "Ordinal", "1–5",              "1=V.Dissatisfied, 5=V.Satisfied"),
-    ("mean_A–mean_E",      "Section mean score",         "Float",   "Scale",   "1.00–5.00",        "Mean of 5 items per section"),
-    ("overall_mean",       "Overall satisfaction mean",  "Float",   "Scale",   "1.00–5.00",        "Mean of all 25 items"),
-    ("satisfaction_category","Satisfaction category",    "String",  "Ordinal", "5 categories",     "Derived from overall_mean"),
-    ("cleanliness…",       "Observation checklist items","String",  "Nominal", "Yes/No",           "Facility observation"),
-    ("obs_yes_count",      "Total observation Yes count","Integer", "Scale",   "0–10",             ""),
-]
-
-
-def run(seed: int | None = None) -> None:
+def run(seed: int = 42) -> None:
     """
     Run the full generation pipeline for this study.
-    Pass a different seed to regenerate a statistically equivalent but distinct dataset.
+    Pass a different seed to regenerate a statistically equivalent dataset.
     """
-    from rdg.utils.console import banner, step, done
-    import time
+    _banner()
+    rng = np.random.default_rng(seed)
 
-    seed = seed or 42
-    rng  = np.random.default_rng(seed)
+    # ── Step 1: Load study from JSON configs ─────────────────
+    _step(1, 5, "Loading study configuration")
+    t      = time.time()
+    bundle = load_all(STUDY_DIR)
+    study  = bundle.study
+    q      = bundle.questionnaire
+    vd     = bundle.variable_dictionary
+    print(f"     {study.title}")
+    print(f"     {study.n_facilities} facilities, target n={study.target_n}")
+    print(f"     {q.question_count} questions across {len(q.sections)} sections")
+    print(f"     {len(vd)} variables in dictionary  ({time.time()-t:.1f}s)")
 
-    banner(STUDY_TITLE, STUDY_SETTING)
-
-    # ── Facility assignments ──────────────────────────────────
-    facility_ids: list[int] = []
-    for fac in FACILITIES:
-        facility_ids.extend([fac["id"]] * RESPONDENTS_PER_FACILITY)
-
-    # ── Step 1: Demographics ──────────────────────────────────
-    step(1, 5, "Generating demographics")
+    # ── Step 2: Generate respondents (demographics) ───────────
+    _step(2, 5, "Generating study population")
     t = time.time()
-    respondents = demo_gen.generate(
-        n           = N_RESPONDENTS,
-        config_path = STUDY_DIR / "demographics.json",
-        rng         = rng,
-        ordinal_maps = ORDINAL_MAPS,
-    )
-    print(f"     {len(respondents)} respondents  ({time.time()-t:.1f}s)")
-
-    # ── Step 2: Questionnaire ─────────────────────────────────
-    step(2, 5, "Generating questionnaire responses")
-    t = time.time()
-    q_rows = q_gen.generate(
-        respondents          = respondents,
-        questionnaire_path   = STUDY_DIR / "questionnaire.json",
+    respondents = generate_respondents(
+        n                    = study.target_n,
+        demographics_cfg     = bundle.raw_demographics,
+        facility_assignments = study.facility_assignments(),
         rng                  = rng,
-        facility_assignments = facility_ids,
-        facility_effects     = FACILITY_EFFECTS,
+        ordinal_maps         = ORDINAL_MAPS,
     )
-    print(f"     25 items × {len(q_rows)} respondents  ({time.time()-t:.1f}s)")
+    print(f"     {len(respondents)} respondents created  ({time.time()-t:.1f}s)")
+    _show_sample(respondents[0])
 
-    # ── Step 3: Observation ───────────────────────────────────
-    step(3, 5, "Generating observation checklist")
+    # ── Step 3: Generate questionnaire responses ──────────────
+    _step(3, 5, "Generating responses (causal model)")
     t = time.time()
-    obs_rows = obs_gen.generate(
-        respondents          = respondents,
-        questionnaire_rows   = q_rows,
-        facility_assignments = facility_ids,
-        observation_path     = STUDY_DIR / "observation.json",
-        rng                  = rng,
-    )
-    print(f"     10 items × {len(obs_rows)} visits  ({time.time()-t:.1f}s)")
+    fac_effects = {f.id: f.satisfaction_effect for f in study.facilities}
+    generate_responses(respondents, q, rng, facility_effects=fac_effects)
+    print(f"     {q.question_count} items × {len(respondents)} respondents  ({time.time()-t:.1f}s)")
 
-    # ── Step 4: Validate ──────────────────────────────────────
-    step(4, 5, "Validating dataset")
-    report = validator.run(
-        demographics        = respondents,
-        questionnaire_rows  = q_rows,
-        observations        = obs_rows,
-        expected_n          = N_RESPONDENTS,
-        edu_rank_field      = "education_rank",
-        distance_field      = "distance_to_facility_km",
-    )
-    s = report["summary"]
-    print(f"     ✓ {s['n_passed']} passed  ⚠ {s['n_warnings']} warnings  ✗ {s['n_errors']} errors")
-    if not s["ready_to_export"]:
-        print("\n  ✗ Validation failed. Check errors above. Aborting export.")
-        for e in report["errors"]:
-            print(f"    • {e}")
+    # ── Step 4: Generate observation checklist ────────────────
+    _step(4, 5, "Generating facility observations")
+    t = time.time()
+    generate_observations(respondents, bundle.raw_observation, rng)
+    obs_items = len(bundle.raw_observation.get("checklist", []))
+    print(f"     {obs_items} items × {len(respondents)} visits  ({time.time()-t:.1f}s)")
+
+    # ── Step 5: Build Dataset and validate ────────────────────
+    _step(5, 5, "Building dataset and validating")
+    t      = time.time()
+    dataset = Dataset(study_title=study.title, seed=seed)
+    for resp in respondents:
+        dataset.add(resp)
+
+    report = validate(dataset, study)
+    s      = report.summary()
+    print(f"     {s}  ({time.time()-t:.1f}s)")
+
+    if not report.is_ready:
+        print("\n  ✗ Validation failed. Errors:")
+        for e in report.errors:
+            print(f"     • {e.message}")
         return
 
-    # ── Step 5: Export ────────────────────────────────────────
-    step(5, 5, "Exporting outputs")
-    paths = exporter.export(
-        demographics        = respondents,
-        questionnaire_rows  = q_rows,
-        observations        = obs_rows,
-        validation_report   = report,
-        output_dir          = OUTPUT_DIR,
-        study_title         = STUDY_TITLE,
-        seed                = seed,
-        spss_maps           = SPSS_MAPS,
-        codebook_rows       = CODEBOOK,
-    )
-    done(paths)
+    # ── Print validation detail ───────────────────────────────
+    print()
+    for check in report.checks:
+        icon = {"pass": "  ✓", "warn": "  ⚠", "error": "  ✗"}[check.status]
+        print(f"{icon}  {check.message}")
+
+    print()
+    print(f"  Dataset ready. {len(dataset)} respondents, {len(dataset.variable_names)} variables.")
+    print(f"  Export (Stage 10) will write to: {OUTPUT_DIR}/")
+    print()
+
+
+def _banner():
+    print(f"\n{'─'*60}")
+    print("  RESEARCH ANALYSIS TOOLKIT")
+    print("  Study: Caregiver Satisfaction — Immunization Services")
+    print(f"{'─'*60}")
+
+
+def _step(n, total, label):
+    print(f"\n  [{n}/{total}] {label}")
+
+
+def _show_sample(r):
+    dm = r.demographics
+    print(f"     Sample respondent: {r.respondent_id} | "
+          f"Facility {r.facility_id} | "
+          f"Age {dm.get('age','?')} | "
+          f"Gender {dm.get('gender','?')} | "
+          f"Edu {dm.get('education','?')} | "
+          f"Dist {dm.get('distance_to_facility_km','?')} km")
