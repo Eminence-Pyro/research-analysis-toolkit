@@ -1,36 +1,48 @@
 # Research Analysis Toolkit
 
-A reusable, domain-driven Python toolkit for academic research workflows.
+A reusable, domain-driven Python toolkit for the full academic research
+data workflow — from questionnaire to analysis-ready export.
+
+---
 
 ## What This Is
 
-Research Analysis Toolkit (RAT) is a modular software product that covers
-the full lifecycle of academic research data work:
+Research Analysis Toolkit (RAT) covers every step a researcher needs after
+designing a study:
 
-| Step | Module |
-|------|--------|
-| Define your study | `research_engine/models/` — core domain objects |
-| Parse questionnaires | `research_engine/parsers/` — Word/JSON instrument import |
-| Calculate sample size | `research_engine/generators/sample_size.py` |
-| Generate synthetic datasets | `research_engine/generators/` |
-| Validate datasets | `research_engine/validators/` |
-| Run descriptive analysis | `research_engine/analysis/` |
-| Export to Excel/SPSS/PDF/Word | `research_engine/exporters/` |
-| Produce Chapter Four tables | `research_engine/reports/` |
+| Stage | Module | What it does |
+|-------|--------|--------------|
+| 0 | Foundation | Repository, structure, conventions, dependencies |
+| 1 | Domain Model | Defines the core research objects every other module uses |
+| 2 | Readers | Imports Word, Excel, CSV files into domain objects |
+| 3 | Variable Discovery | Automatically builds the Variable Dictionary from documents |
+| 4 | Configuration Engine | Sample size, sampling technique, demographic distributions |
+| 5 | Population Generator | Creates Respondents — age, gender, occupation, facility |
+| 6 | Response Intelligence | Generates realistic answers using a configurable causal model |
+| 7 | Observation Engine | Generates facility observations consistent with respondent data |
+| 8 | Validation Engine | Checks distributions, coding, consistency, assumptions |
+| 9 | Analysis Engine | Frequencies, means, crosstabs, chi-square, correlations |
+| 10 | Export Engine | Excel, CSV, SPSS, JSON, PDF, Word |
+| 11 | User Interface | CLI, desktop app, web app, API |
 
-## Why This Exists
+---
 
-Generating research data manually is:
-- Time consuming and inconsistent
-- Prone to unrealistic variable relationships
-- Difficult to reproduce when the questionnaire changes
-- Disconnected from downstream analysis and reporting
+## Version 1 Goal
 
-This toolkit solves those problems by treating research as a **domain**,
-not a spreadsheet task. Every module works with the same core objects —
-`Study`, `Questionnaire`, `Question`, `Variable`, `Respondent`, `Dataset` —
-so a malaria study, an HIV study, a school health study, and an
-immunization study all use identical workflows.
+By the end of Version 1, a researcher should be able to:
+
+1. Place a proposal, questionnaire, and analysis workbook into `input/`
+2. Configure the study (sample size, facilities, distributions)
+3. Run a single command
+4. Receive:
+   - A populated analysis workbook
+   - A synthetic dataset (raw + SPSS-ready)
+   - Observation checklist data
+   - A variable codebook
+   - Validation report
+   - Analysis-ready exports
+
+---
 
 ## Architecture
 
@@ -38,46 +50,16 @@ immunization study all use identical workflows.
 research-analysis-toolkit/
 │
 ├── research_engine/               # Core library
-│   ├── models/                    # Domain model — the language of the application
-│   │   ├── study.py               # Study, Facility
-│   │   ├── questionnaire.py       # Questionnaire, Section, Question
-│   │   ├── variable.py            # Variable, VariableDictionary
-│   │   ├── respondent.py          # Respondent, Response
-│   │   └── dataset.py             # Dataset
-│   │
-│   ├── parsers/                   # Import instruments and frameworks
-│   │   ├── questionnaire_parser.py
-│   │   ├── workbook_reader.py
-│   │   └── json_loader.py
-│   │
-│   ├── generators/                # Synthetic data production
-│   │   ├── demographics.py
-│   │   ├── responses.py
-│   │   ├── observations.py
-│   │   └── sample_size.py
-│   │
-│   ├── validators/                # Consistency and quality checks
-│   │   └── dataset_validator.py
-│   │
-│   ├── analysis/                  # Statistical analysis
-│   │   ├── frequencies.py
-│   │   ├── descriptives.py
-│   │   ├── crosstabs.py
-│   │   └── charts.py
-│   │
-│   ├── exporters/                 # Output formats
-│   │   ├── excel_exporter.py
-│   │   ├── csv_exporter.py
-│   │   ├── spss_exporter.py
-│   │   ├── pdf_exporter.py
-│   │   └── word_exporter.py
-│   │
-│   └── reports/                   # Chapter Four and summary report builders
-│       ├── chapter_four.py
-│       └── codebook.py
+│   ├── models/      Stage 1       # Domain objects — Study, Questionnaire, Variable, Respondent, Dataset
+│   ├── parsers/     Stage 2–3     # Read Word/Excel/CSV into domain objects
+│   ├── generators/  Stage 4–7     # Configuration, population, responses, observations
+│   ├── validators/  Stage 8       # Quality control and consistency checks
+│   ├── analysis/    Stage 9       # Frequencies, descriptives, crosstabs, charts
+│   ├── exporters/   Stage 10      # Excel, CSV, SPSS, PDF, Word
+│   └── reports/     Stage 10–11   # Chapter Four tables, codebook, APA summaries
 │
 ├── studies/                       # One package per research study
-│   └── immunization_aba/          # Caregiver satisfaction, Aba North LGA
+│   └── immunization_aba/          # First study — caregiver satisfaction, Aba North LGA
 │
 ├── output/                        # Generated files — git-ignored
 ├── main.py                        # CLI entry point
@@ -85,40 +67,114 @@ research-analysis-toolkit/
 └── PROJECT_JOURNAL.md
 ```
 
-## Version Roadmap
+### Layer dependency rules
 
-### v1.0 — Domain Foundation *(current)*
-- [ ] Core domain model (`Study`, `Questionnaire`, `Question`, `Variable`, `Respondent`, `Dataset`)
-- [ ] JSON-based questionnaire loader
-- [ ] Demographics generator (plugs into domain model)
-- [ ] Likert response generator with configurable causal model
-- [ ] Observation checklist generator
-- [ ] Statistical validator
-- [ ] Excel exporter (multi-sheet, formatted)
-- [ ] CSV and SPSS-ready export
-- [ ] Plain-text validation report
+```
+parsers / generators
+       ↓
+   models/          ← no dependencies — the foundation everything else builds on
+       ↓
+validators  analysis
+       ↓        ↓
+    exporters / reports
+```
 
-### v1.1 — Analysis Layer
-- [ ] Frequency tables
-- [ ] Descriptive statistics
-- [ ] Cross-tabulations
-- [ ] Chart generation (bar, pie, histogram)
+Nothing in `analysis/` knows about Excel.
+Nothing in `exporters/` knows how data was generated.
+Nothing in `models/` knows anything exists outside itself.
 
-### v1.2 — Report Generation
-- [ ] Chapter Four table builder
-- [ ] Codebook generator
-- [ ] Word (.docx) export
-- [ ] PDF export
+---
 
-### v1.3 — Import Layer
-- [ ] Word questionnaire parser
-- [ ] Excel analysis framework reader / writer
-- [ ] Variable dictionary from questionnaire
+## Development Roadmap
 
-### v2.0 — Web Interface
-- [ ] Streamlit or FastAPI web UI
-- [ ] Study configuration via browser
-- [ ] Dataset preview and download
+### ✅ Stage 0 — Foundation & Architecture
+- [x] Repository
+- [x] Folder structure
+- [x] Dependencies (`requirements.txt`)
+- [x] README
+- [x] PROJECT_JOURNAL
+- [x] Package skeleton with documented layer responsibilities
+
+### 🔄 Stage 1 — Core Domain Model *(next)*
+- [ ] `Variable`, `MeasurementScale`, `VariableDictionary`
+- [ ] `Question`, `Section`, `Questionnaire`
+- [ ] `Facility`, `Study`
+- [ ] `Response`, `Respondent`
+- [ ] `Dataset`
+
+### ⬜ Stage 2 — Readers (Input Layer)
+- [ ] Excel workbook reader
+- [ ] Word questionnaire reader
+- [ ] CSV reader
+- [ ] PDF reader *(future)*
+
+### ⬜ Stage 3 — Variable Discovery Engine
+- [ ] Auto-detect variable names and types
+- [ ] Infer allowed values and missing value codes
+- [ ] Produce VariableDictionary from parsed documents
+
+### ⬜ Stage 4 — Research Configuration Engine
+- [ ] Sample size calculators (Cochran, Yamane, Krejcie-Morgan)
+- [ ] Facility and respondent count configuration
+- [ ] Demographic distribution profiles
+- [ ] Sampling technique selection
+
+### ⬜ Stage 5 — Synthetic Population Generator
+- [ ] Generate Respondent objects with realistic demographics
+- [ ] Assign respondents to facilities
+- [ ] Configurable distributions per study
+
+### ⬜ Stage 6 — Response Intelligence Engine ⭐️
+- [ ] Causal model: education → satisfaction, distance → waiting time → lower scores
+- [ ] Configurable causal weights per study
+- [ ] Generates defensible, internally consistent response patterns
+
+### ⬜ Stage 7 — Observation Engine
+- [ ] Facility observation checklist generation
+- [ ] Consistency with respondent satisfaction scores
+- [ ] Configurable checklist items per study
+
+### ⬜ Stage 8 — Validation Engine
+- [ ] Missing value checks
+- [ ] Range and impossible combination checks
+- [ ] Distribution target verification
+- [ ] Cross-variable correlation checks
+- [ ] Coding integrity validation
+
+### ⬜ Stage 9 — Analysis Engine
+- [ ] Frequency and percentage tables
+- [ ] Descriptive statistics (mean, SD, median, skewness)
+- [ ] Cross-tabulations with chi-square and Cramer's V
+- [ ] Correlation matrix
+- [ ] t-tests and one-way ANOVA *(future)*
+
+### ⬜ Stage 10 — Export Engine
+- [ ] Formatted multi-sheet Excel workbook
+- [ ] Raw and labelled CSV
+- [ ] SPSS-ready numeric CSV with codebook
+- [ ] JSON export
+- [ ] PDF report
+- [ ] Word (.docx) summary
+
+### ⬜ Stage 11 — User Interface
+- [ ] CLI (argparse, `python main.py --study X --seed N`)
+- [ ] Desktop application *(future)*
+- [ ] Web application / Streamlit *(v2)*
+- [ ] REST API / FastAPI *(v2)*
+
+---
+
+## Future Vision (Version 2+)
+
+- AI-assisted questionnaire interpretation
+- Automatic sample size calculation from proposal text
+- Chapter Four table generation in APA format
+- Support for multiple study designs (cross-sectional, cohort, case-control)
+- Plugin system for custom generators and exporters
+- Multi-language support
+- Web dashboard for researchers
+
+---
 
 ## Quick Start
 
@@ -128,22 +184,14 @@ cd research-analysis-toolkit
 pip install -r requirements.txt
 python main.py --list
 python main.py --study immunization_aba
+python main.py --study immunization_aba --seed 123
 ```
 
 ## Current Studies
 
-| Study | Folder | N | Status |
-|-------|--------|---|--------|
-| Caregiver Satisfaction with Immunization Services, Aba North LGA | `immunization_aba` | 120 | ✅ v0 |
-
-## Technologies
-
-- Python 3.12+
-- numpy, pandas, scipy
-- openpyxl (Excel)
-- python-docx (Word export — v1.2)
-- reportlab (PDF export — v1.2)
-- rich (optional terminal output)
+| Study | N | Status |
+|-------|---|--------|
+| Caregiver Satisfaction with Immunization Services — Aba North LGA | 120 | v0 (pre-domain-model) |
 
 ## License
 
