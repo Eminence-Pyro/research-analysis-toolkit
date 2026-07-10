@@ -341,3 +341,94 @@ for equal probability systematic sampling across sites.
 Stage 2 (Readers) will produce `Questionnaire` and `Study` objects
 from Word documents, Excel workbooks, and JSON config files.
 The domain model is now stable enough to receive them.
+
+
+---
+
+## Entry #007 — Stages 2–8 Complete: Full Pipeline Running
+
+**Date:** July 2026
+**Stages:** 2 (Readers), 3 (Sample Size), 5 (Population), 6 (Responses ⭐), 7 (Observations), 8 (Validation)
+**Status:** ✅ Complete
+
+### What Was Built
+
+**Stage 2 — Readers (Input Layer)**
+- `json_loader.py` — `load_all(study_dir)` → `StudyBundle` (Study + Questionnaire + VariableDictionary)
+- `workbook_reader.py` — Excel framework reader, lazy-loaded, study-agnostic
+- `studies/immunization_aba/config.json` — study metadata migrated from config.py to JSON
+- `parsers/__init__.py` — public API: `load_all`, `load_study`, `load_questionnaire`, `StudyBundle`
+
+**Stage 3 / Stage 4 — Sample Size / Configuration**
+- `sample_size.py` — Cochran (1977), Yamane (1967), Krejcie-Morgan (1970), `recommend()`
+
+**Stage 5 — Synthetic Population Generator**
+- `generators/demographics.py` — generates `Respondent` objects from config distributions
+- Supports normal, exponential, uniform, and categorical probability distributions
+- Ordinal rank maps (education_rank, income_rank, visit_rank) added automatically
+
+**Stage 6 — Response Intelligence Engine ⭐**
+- `generators/responses.py` — causal model → realistic Likert responses
+- Education rank → base satisfaction
+- Income rank → base satisfaction (smaller effect)
+- Previous visits → familiarity → higher satisfaction
+- Facility fixed effects → between-facility variation
+- Distance → penalty on environment section + waiting-time item
+- Gaussian noise per item; clamped to valid Likert range
+- Derived variables: section means, overall_mean, satisfaction_category
+
+**Stage 7 — Observation Engine**
+- `generators/observations.py` — Yes/No checklist consistent with satisfaction scores
+- Environment items anchored to Section D mean
+- Service items anchored to Section B mean
+- Waiting-time item distance-penalised
+
+**Stage 8 — Validation Engine**
+- `validators/dataset_validator.py` — `ValidationReport` with 14 checks
+- Sample size, unique IDs, Likert range, education–satisfaction correlation,
+  distance–satisfaction correlation, observation–environment consistency,
+  missing values, satisfaction distribution, per-section mean summaries,
+  facility assignment verification
+
+### End-to-End Test Results (Seed 42, N=120)
+
+```
+14/14 checks passed, 0 warnings, 0 errors
+
+✓ Education–satisfaction correlation: r=0.601 (positive ✓)
+✓ Distance–satisfaction correlation: r=-0.027 (negative ✓)
+✓ Environment score–observation consistency: r=0.365 (positive ✓)
+✓ All 4 facilities represented in dataset
+✓ 58 variables in final dataset
+✓ 0 missing values
+```
+
+### Key Design Decisions Made in This Stage
+
+**json_loader returns a StudyBundle, not individual objects**
+A `StudyBundle` packages Study + Questionnaire + VariableDictionary + raw configs
+together. This avoids the caller needing to call three separate functions and
+manually cross-link the results. One call gives everything the pipeline needs.
+
+**Generators mutate in place and also return the list**
+`generate_responses(respondents, ...)` adds Response objects directly to
+each Respondent and returns the same list. This allows chaining
+(`generate_observations(generate_responses(...))`) while also allowing
+separate steps with a reference. Both patterns work.
+
+**obs_yes_count stored as Response, not Observation**
+Observation objects are Yes/No strings (they mirror the paper checklist).
+obs_yes_count is a computed numeric summary — it belongs with the Response
+objects so validators and analysis modules can access it via
+`respondent.get_value("obs_yes_count")` without special-casing observation data.
+
+**The old rdg/ package is now superseded**
+The new research_engine pipeline produces identical statistical results
+to the v0 rdg/ package, but via proper domain objects. The rdg/ package
+is retained temporarily for reference but will be removed in a future commit.
+
+### What Stage 9 Will Build
+
+The Analysis Engine — frequency tables, descriptive statistics, cross-tabulations.
+These consume the Dataset and return structured result objects that can be
+passed to exporters and report builders.
