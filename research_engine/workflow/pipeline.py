@@ -194,7 +194,31 @@ class Pipeline:
         raw  = export_raw_csv(self.dataset, self.output_dir, self.bundle.study.title)
         spss = export_spss(self.dataset, self.output_dir, self.spss_maps, vd,
                            self.bundle.study.title)
-        self.output_files = [xl, raw, spss]
+
+        # ── Word / Chapter Four (Milestone 1.1.A) ────────────
+        from research_engine.exporters.word_exporter import export_word
+        from research_engine.analysis.crosstabs import crosstab as _crosstab
+
+        ct_results = []
+        for rv, cv in (self.crosstab_pairs or []):
+            try:
+                ct_results.append(_crosstab(self.dataset, rv, cv))
+            except Exception:
+                pass
+
+        docx = export_word(
+            dataset             = self.dataset,
+            questionnaire       = self.bundle.questionnaire,
+            variable_dictionary = vd,
+            validation_report   = self.report,
+            likert_sum          = self.analysis.likert_summary,
+            freq_tables         = self.analysis.freq_tables,
+            crosstab_results    = ct_results,
+            output_dir          = self.output_dir,
+            study_title         = self.bundle.study.title,
+            seed                = self.seed,
+        )
+        self.output_files = [xl, raw, spss, docx]
         self._stage_times["export"] = time.perf_counter() - t
         return self
 
