@@ -855,3 +855,75 @@ The next commit will be a working feature — not a folder move.
 v1.1, Milestone A: Word (.docx) Chapter Four export.
 The reviewer's recommended order (domain objects → parsers → generators → validators)
 has already been followed in full. The next layer is output — the Word exporter.
+
+
+---
+
+## Entry #013 — Milestone 1.1.A Complete: Word Chapter Four Exporter
+
+**Date:** July 2026
+**Milestone:** 1.1.A — Document Output
+**Status:** ✅ Complete
+
+### What Was Built
+
+`research_engine/exporters/word_exporter.py` — `export_word()` function
+
+Produces a submission-ready Chapter Four `.docx` document containing:
+
+**Section 4.1 — Descriptive Statistics**
+- One table per questionnaire section (5 tables for immunization study)
+  - Columns: Item No. | Statement | N | Mean | SD | Interpretation
+  - Footer row with section mean (dark navy background)
+- Summary table: all section means + grand mean + verbal interpretation
+
+**Section 4.2 — Frequency Distributions**
+- One table per categorical demographic variable
+  - Columns: Category | Frequency | Percent (%) | Cumulative (%)
+  - Total row footer
+
+**Section 4.3 — Cross-Tabulations**
+- One table per crosstab pair (gender/education/marital/occupation × satisfaction)
+  - Observed frequencies with row and column totals
+  - Chi-square stats inline: χ²(df) = value, p = value, Cramer's V, significance flag
+
+### Output Verified (seed=42, N=120)
+
+```
+Pattern_of_Caregiver_Satisfaction_with_I_YYYYMMDD.docx   42.7 KB
+
+Document structure:
+   Paragraphs : 104
+   Tables     : 18
+   Headings   : 5 (CHAPTER FOUR, PRESENTATION AND ANALYSIS, 4.1, 4.2, 4.3)
+
+Table breakdown:
+   Tables 1–5  : Descriptive stats per section (7 rows × 6 cols each)
+   Table 6     : Section summary (7 rows × 4 cols)
+   Tables 7–14 : Frequency distributions (8 demographic variables)
+   Tables 15–18: Crosstabulations (4 × satisfaction category)
+```
+
+### Engineering Notes
+
+**XML helpers for python-docx**
+`python-docx` doesn't expose cell background colour or border styling through
+its high-level API. Used `OxmlElement` and `qn()` to set `w:shd` (cell fill)
+and `w:tcBorders` (borders) directly on the underlying XML. This is the correct
+pattern — not a workaround.
+
+**Data flow**
+`export_word()` receives `LikertSummary`, `list[FrequencyTable]`, and `list[CrosstabResult]`
+as structured objects — it never re-computes anything. The analysis layer owns the
+computation; the exporter owns only the rendering.
+
+**Pipeline integration**
+`Pipeline.export()` now produces 4 files: Excel, raw CSV, SPSS CSV, and .docx.
+`python-docx>=1.0.0` added to `requirements.txt`.
+
+### Remaining Milestone 1.1 Work
+
+- [ ] `exporters/spss_exporter.py` — SPSS syntax (.sps) file
+- [ ] `analysis/reliability.py` — Cronbach's alpha per section
+- [ ] Schema validation in `json_loader.py`
+- [ ] CI: `pytest` in GitHub Actions
