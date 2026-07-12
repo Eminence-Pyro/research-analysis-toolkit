@@ -102,7 +102,7 @@ Active work:
 ## Upcoming Milestones
 
 ### Milestone 1.1.A — Document Output
-- [ ] `exporters/word_exporter.py` — Chapter Four in .docx
+- [x] `exporters/word_exporter.py` — Chapter Four in .docx
   - Frequency table per categorical variable (APA style)
   - Descriptive statistics table (mean, SD, interpretation per Likert item)
   - Cross-tabulation tables with chi-square, df, p-value, Cramer's V
