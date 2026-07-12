@@ -134,7 +134,8 @@ def load_variable_dictionary(
     return vd
 
 
-def load_all(study_dir: str | Path) -> StudyBundle:
+def load_all(study_dir: str | Path,
+             validate: bool = True) -> StudyBundle:
     """
     Load everything for a study from its directory.
 
