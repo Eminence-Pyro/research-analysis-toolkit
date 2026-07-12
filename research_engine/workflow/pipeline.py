@@ -218,6 +218,7 @@ class Pipeline:
             likert_sum          = self.analysis.likert_summary,
             freq_tables         = self.analysis.freq_tables,
             crosstab_results    = ct_results,
+            reliability_report  = getattr(self, "reliability", None),
             output_dir          = self.output_dir,
             study_title         = self.bundle.study.title,
             seed                = self.seed,
