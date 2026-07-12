@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/Eminence-Pyro/research-analysis-toolkit/schemas/study.schema.json",
+  "$id": "rat://schemas/study.schema.json",
   "title": "Study Configuration",
   "description": "Schema for studies/*/config.json",
   "type": "object",
@@ -8,37 +8,28 @@
                "sampling_technique", "target_n", "facilities"],
   "additionalProperties": true,
   "properties": {
-    "schema_version": {
-      "type": "string",
-      "enum": ["1.0"],
-      "description": "Schema version — must be '1.0'"
-    },
-    "rat_version": { "type": "string" },
-    "title":       { "type": "string", "minLength": 5 },
-    "design":      { "type": "string" },
-    "setting":     { "type": "string" },
-    "population":  { "type": "string" },
-    "sampling_technique": { "type": "string" },
-    "target_n": {
-      "type": "integer",
-      "minimum": 1,
-      "description": "Required sample size"
-    },
+    "schema_version":      { "type": "string", "enum": ["1.0"] },
+    "rat_version":         { "type": "string" },
+    "title":               { "type": "string", "minLength": 3 },
+    "setting":             { "type": "string", "minLength": 3 },
+    "population":          { "type": "string", "minLength": 3 },
+    "target_n":            { "type": "integer", "minimum": 1, "maximum": 10000 },
+    "design":              { "type": "string" },
+    "sampling_technique":  { "type": "string" },
     "facilities": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["id", "name", "satisfaction_effect"],
+        "required": ["id", "name"],
+        "additionalProperties": true,
         "properties": {
-          "id":   { "type": "integer", "minimum": 1 },
-          "name": { "type": "string",  "minLength": 1 },
-          "satisfaction_effect": {
-            "type": "number",
-            "minimum": -2.0,
-            "maximum":  2.0,
-            "description": "Causal model offset applied to all respondents at this facility"
-          }
+          "id":                   { "type": "integer", "minimum": 1 },
+          "name":                 { "type": "string", "minLength": 1 },
+          "ward":                 { "type": "string" },
+          "lga":                  { "type": "string" },
+          "state":                { "type": "string" },
+          "satisfaction_effect":  { "type": "number" }
         }
       }
     }
