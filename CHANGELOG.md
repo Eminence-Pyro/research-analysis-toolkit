@@ -15,6 +15,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `schema_version: "1.0"` field in all study JSON configs
 - `rat_version: "1.0.0"` field in study config.json
 
+
+### Added (continued)
+- `legacy/rdg/` — archived v0 package
+- `schemas/*.schema.json` — JSON Schema Draft 7 for all four study config types
+- `tests/models/` — `test_variable.py`, `test_questionnaire.py`
+- `tests/workflow/test_pipeline.py` — end-to-end Pipeline integration test
+- `tests/{parsers,generators,validators,analysis,exporters}/__init__.py` — scaffolds
+- `examples/simple_health_survey/` — complete 4-file study template
+- `examples/malaria_kap/config.json` — KAP study scaffold
+- `docs/architecture/` — overview, workflow, plugins, study-schema
+- `docs/adr/` — 5 Architecture Decision Records (ADR 001–005)
+- `ROADMAP.md` — master plan with v1.1 milestones, v2 vision, frozen structure
+
+### Removed
+- `rdg/` — superseded by `research_engine/`, archived to `legacy/rdg/`
+- `studies/immunization_aba/config.py` — config.json is the single source of truth
+
 ### Changed
 - `cli/interface.py` `cmd_run` — now uses `Pipeline` instead of importing study `run.py` directly
 - `README.md` — complete overhaul: Implemented/In-Progress/Planned feature table,
