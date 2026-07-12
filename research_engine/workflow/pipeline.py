@@ -112,9 +112,6 @@ class Pipeline:
         self.bundle = load_all(self.study_dir)
         self._stage_times["load"] = time.perf_counter() - t
         # ── Reliability (Milestone 1.1.B) ────────────────────
-        from research_engine.analysis.reliability import full_reliability
-        self.reliability = full_reliability(self.dataset, self.bundle.questionnaire)
-
         return self
 
     def generate(self) -> "Pipeline":
@@ -170,6 +167,13 @@ class Pipeline:
             self.bundle.variable_dictionary, self.crosstab_pairs,
         )
         self._stage_times["analyse"] = time.perf_counter() - t
+
+        # ── Reliability analysis (Milestone 1.1.B) ──────
+        from research_engine.analysis.reliability import full_reliability
+        self.reliability = full_reliability(
+            self.dataset, self.bundle.questionnaire
+        )
+
         return self
 
     def export(self) -> "Pipeline":
