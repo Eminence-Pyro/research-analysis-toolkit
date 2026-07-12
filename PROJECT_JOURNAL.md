@@ -1152,3 +1152,47 @@ All four milestones of Sprint v1.1 are now delivered:
 | 1.1.D | GitHub Actions CI | ✅ |
 
 The pipeline now produces **5 publication-ready output files** in one command.
+
+
+---
+
+## Entry #017 — Sprint 1.2: Chart Engine + Integration Tests
+
+**Date:** July 2026
+**Sprint:** 1.2 — Visual Output
+**Status:** ✅ Complete
+
+### What Was Built
+
+`research_engine/analysis/charts.py` — 5 chart types, 475 lines.
+
+| Function | Type | Description |
+|----------|------|-------------|
+| `likert_bar_chart(ls, section_key)` | Horizontal bar | Mean scores per item, ordered descending |
+| `demographic_pie_chart(ft)` | Pie | Categorical variables with ≤5 groups |
+| `demographic_bar_chart(ft)` | Vertical bar | Categorical variables with >5 groups |
+| `reliability_bar_chart(report)` | Horizontal bar | α per section with colour-coded thresholds |
+| `satisfaction_heatmap(dataset, q)` | Heatmap | Section × facility mean satisfaction grid |
+| `save_chart(fig, dir, stem)` | Utility | Save PNG at 300 dpi |
+| `all_charts(analysis_bundle, dir)` | Batch | Generate all standard charts in one call |
+
+**Visual identity:**
+- Dark background `#1a1a2e`, panel `#16213e`
+- Gold accent `#F59E0B` for titles and primary bars
+- White `#F1F5F9` for all text and tick labels
+- Coloured threshold lines on reliability chart
+- Heatmap: red → amber → green gradient (1–5 scale)
+
+**Output for immunization_aba study (N=120, seed=42):**
+```
+15 PNG files @ 300 dpi
+  likert_section_a/b/c/d/e.png   (119–146 KB each)
+  demo_gender.png                 (66 KB — pie)
+  demo_education.png              (103 KB — pie)
+  demo_occupation.png             (100 KB — bar)
+  demo_income_monthly_naira.png   (102 KB — bar)
+  reliability_alpha.png           (189 KB)
+  satisfaction_heatmap.png        (80 KB)
+```
+
+**Test coverage:** 17 tests across 5 test classes — all pass.
