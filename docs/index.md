@@ -4,17 +4,15 @@ Technical documentation for the Research Analysis Toolkit.
 
 | Document | Contents |
 |----------|----------|
-| [Architecture](architecture.md) | Design principles, module map, pipeline, causal model, data flow |
-| [Study Schema Reference](study-schema.md) | JSON schema for config, questionnaire, demographics, observation |
-| [Contributing](contributing.md) | Where to work, code standards, plugin guide |
+| [Architecture: Overview](architecture/overview.md) | Layer diagram, design rules |
+| [Architecture: Workflow](architecture/workflow.md) | Pipeline stages, lazy execution |
+| [Architecture: Plugins](architecture/plugins.md) | Plugin types, registration, roadmap |
+| [Architecture: Study Schema](architecture/study-schema.md) | JSON config reference |
+| [ADR Index](adr/README.md) | Architecture Decision Records (5 decisions) |
 
 ---
 
-For a product overview, quick start, and CLI reference, see the
-[README](../README.md) at the project root.
-
-For the full development history and design decisions, see
-[PROJECT_JOURNAL.md](../PROJECT_JOURNAL.md).
-
-For engineering lessons learned, see
-[LEARNING_JOURNAL.md](../LEARNING_JOURNAL.md).
+For a product overview and quick start, see the [README](../README.md).
+For the master plan and version roadmap, see [ROADMAP.md](../ROADMAP.md).
+For full development history, see [PROJECT_JOURNAL.md](../PROJECT_JOURNAL.md).
+For engineering lessons, see [LEARNING_JOURNAL.md](../LEARNING_JOURNAL.md).
