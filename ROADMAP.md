@@ -113,7 +113,7 @@ Active work:
   - [x] `MISSING VALUES`, `FORMATS`, `VARIABLE LEVEL`
 
 ### Milestone 1.1.B — Reliability Analysis
-- [ ] `analysis/reliability.py` — Cronbach's alpha
+- [x] `analysis/reliability.py` — Cronbach's alpha
   - Alpha per section (5 sections × 5 items)
   - Item-total correlation
   - "Alpha if item deleted"
