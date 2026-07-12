@@ -58,6 +58,7 @@ python main.py sample   --population N [--confidence 0.95] [--margin 0.05]
 
 | Feature | Status |
 |---------|--------|
+|---------|--------|
 | Domain model (Study, Questionnaire, Respondent, Dataset) | ✅ |
 | JSON study config loader | ✅ |
 | Causal response model | ✅ |
@@ -76,6 +77,16 @@ python main.py sample   --population N [--confidence 0.95] [--margin 0.05]
 | Chart generation, PDF report | 📋 |
 | Web dashboard (Streamlit), REST API | 📋 |
 | Multiple study designs (cohort, KAP, prevalence) | 📋 |
+
+---
+
+## Tests
+
+```bash
+python -m pytest tests/ -v
+```
+
+Tests mirror the `research_engine/` structure — `tests/models/`, `tests/workflow/`, etc.
 
 ---
 
@@ -100,6 +111,7 @@ No changes to `research_engine/` are ever needed to add a new study.
 | [Project Journal](PROJECT_JOURNAL.md) | Full development history and design decisions |
 | [Learning Journal](LEARNING_JOURNAL.md) | Engineering lessons from v0 → v1 |
 | [Changelog](CHANGELOG.md) | Version history |
+| [ROADMAP](ROADMAP.md) | Master plan, frozen architecture, v1.1 milestones, v2 vision |
 
 ---
 
