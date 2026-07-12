@@ -1017,3 +1017,76 @@ The pipeline now produces 5 output files from `python main.py run --study immuni
 - [ ] `analysis/reliability.py` — Cronbach's alpha per section
 - [ ] Schema validation in `json_loader.py`
 - [ ] CI: `pytest` in GitHub Actions
+
+
+---
+
+## Entry #015 — Milestone 1.1.B Complete: Cronbach's Alpha Reliability Analysis
+
+**Date:** July 2026
+**Milestone:** 1.1.B — Reliability Analysis
+**Status:** ✅ Complete
+
+### What Was Built
+
+`research_engine/analysis/reliability.py` — three pure functions + two domain result objects + two public API functions.
+
+**Pure statistical functions (numpy only — no domain objects):**
+
+| Function | Description |
+|----------|-------------|
+| `cronbach_alpha(matrix)` | Standard α formula: (k/k−1) × (1 − Σσ²ᵢ/σ²_total) |
+| `item_total_correlations(matrix)` | Corrected item-total r — uses rest-score, not total, to avoid inflation |
+| `alpha_if_item_deleted(matrix)` | Alpha recomputed k times, dropping one item each time |
+
+**Result objects:**
+- `ItemReliability` — per-item stats: mean, SD, item-total r, r-interpretation, α-if-deleted
+- `SectionReliability` — section-level alpha, interpretation, list of ItemReliability
+- `ReliabilityReport` — all sections + overall alpha across the full instrument
+
+**Public API:**
+- `section_reliability(dataset, section)` → SectionReliability
+- `full_reliability(dataset, questionnaire)` → ReliabilityReport
+
+**Interpretation scale used (Nunnally & Bernstein, 1994):**
+```
+α ≥ 0.9  → Excellent
+α ≥ 0.8  → Good
+α ≥ 0.7  → Acceptable
+α ≥ 0.6  → Questionable
+α ≥ 0.5  → Poor
+α <  0.5  → Unacceptable
+```
+
+**Results for immunization study (seed=42, N=120, 25 items):**
+```
+Overall α = 0.849  [Good]
+Section A  α = 0.632  [Questionable]
+Section B  α = 0.436  [Unacceptable]
+Section C  α = 0.472  [Unacceptable]
+Section D  α = 0.521  [Poor]
+Section E  α = 0.568  [Poor]
+```
+Note: per-section alphas are lower than the overall because the causal model
+adds Gaussian noise (SD=0.55) to each item independently. The overall alpha
+benefits from the larger k (25 items). This is expected behavior.
+
+### Integration
+
+- `Pipeline.analyse()` now calls `full_reliability()` and stores `self.reliability`
+- `export_word()` now accepts `reliability_report` and adds Section 4.2:
+  - Summary table: all sections + overall α
+  - One item-level table per section (question no., statement, mean, SD, r, interpretation, α-if-deleted)
+- Word document now has 24 tables across 4 sections (4.1–4.4)
+
+### Engineering Notes
+
+**Why rest-score correlations?**
+The naive item-total correlation includes the item in the total, inflating r.
+The corrected version (rest-score = sum of all _other_ items) avoids this.
+This is what SPSS calls "Corrected Item-Total Correlation" in its Reliability Analysis output.
+
+**Why pure numpy functions?**
+The three core functions accept a raw numpy matrix — no domain objects.
+This makes them testable without a Dataset or Questionnaire, and usable
+from any context (REST API, Jupyter notebook, unit tests).
