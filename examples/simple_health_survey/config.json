@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "title": "Patient Satisfaction with Primary Health Care Services",
+  "design": "Cross-sectional",
+  "setting": "Primary health centres, [State], Nigeria",
+  "population": "Patients attending PHC outpatient clinics",
+  "sampling_technique": "Systematic random sampling",
+  "target_n": 100,
+  "facilities": [
+    { "id": 1, "name": "PHC Site A", "satisfaction_effect":  0.2 },
+    { "id": 2, "name": "PHC Site B", "satisfaction_effect": -0.1 },
+    { "id": 3, "name": "PHC Site C", "satisfaction_effect":  0.0 }
+  ]
+}
