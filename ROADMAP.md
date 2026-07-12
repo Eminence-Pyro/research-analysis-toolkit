@@ -110,8 +110,7 @@ Active work:
 - [ ] `exporters/spss_exporter.py` — SPSS syntax (.sps)
   - `VARIABLE LABELS` for all 58 variables
   - `VALUE LABELS` for all categorical variables
-  - `MISSING VALUES` declarations
-  - `DATA LIST` header for direct import
+  - [x] `MISSING VALUES`, `FORMATS`, `VARIABLE LEVEL`
 
 ### Milestone 1.1.B — Reliability Analysis
 - [ ] `analysis/reliability.py` — Cronbach's alpha
