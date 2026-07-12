@@ -111,6 +111,10 @@ class Pipeline:
         from research_engine.parsers import load_all
         self.bundle = load_all(self.study_dir)
         self._stage_times["load"] = time.perf_counter() - t
+        # ── Reliability (Milestone 1.1.B) ────────────────────
+        from research_engine.analysis.reliability import full_reliability
+        self.reliability = full_reliability(self.dataset, self.bundle.questionnaire)
+
         return self
 
     def generate(self) -> "Pipeline":
