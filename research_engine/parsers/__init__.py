@@ -27,3 +27,10 @@ __all__ = [
     "load_variable_dictionary",
     "StudyBundle",
 ]
+from research_engine.parsers.schema_validator import (
+    validate_config,
+    validate_study_dir,
+    assert_valid_study_dir,
+    ConfigValidationError,
+    ValidationResult,
+)
