@@ -21,3 +21,4 @@ from research_engine.exporters.word_exporter import export_word
 __all__ = [
     "export_excel", "export_raw_csv", "export_spss", "export_word",
 ]
+from research_engine.exporters.spss_exporter import export_spss_syntax
