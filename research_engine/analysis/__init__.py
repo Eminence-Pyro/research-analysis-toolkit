@@ -44,3 +44,13 @@ __all__ = [
     "DescriptiveStats", "LikertSummary", "LikertItemStats",
     "crosstab", "CrosstabResult",
 ]
+from research_engine.analysis.reliability import (
+    cronbach_alpha,
+    item_total_correlations,
+    alpha_if_item_deleted,
+    section_reliability,
+    full_reliability,
+    SectionReliability,
+    ItemReliability,
+    ReliabilityReport,
+)
