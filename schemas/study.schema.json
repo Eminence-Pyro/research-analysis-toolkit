@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Eminence-Pyro/research-analysis-toolkit/schemas/study.schema.json",
+  "title": "Study Configuration",
+  "description": "Schema for studies/*/config.json",
+  "type": "object",
+  "required": ["schema_version", "title", "design", "setting", "population",
+               "sampling_technique", "target_n", "facilities"],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0"],
+      "description": "Schema version — must be '1.0'"
+    },
+    "rat_version": { "type": "string" },
+    "title":       { "type": "string", "minLength": 5 },
+    "design":      { "type": "string" },
+    "setting":     { "type": "string" },
+    "population":  { "type": "string" },
+    "sampling_technique": { "type": "string" },
+    "target_n": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Required sample size"
+    },
+    "facilities": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "satisfaction_effect"],
+        "properties": {
+          "id":   { "type": "integer", "minimum": 1 },
+          "name": { "type": "string",  "minLength": 1 },
+          "satisfaction_effect": {
+            "type": "number",
+            "minimum": -2.0,
+            "maximum":  2.0,
+            "description": "Causal model offset applied to all respondents at this facility"
+          }
+        }
+      }
+    }
+  }
+}
