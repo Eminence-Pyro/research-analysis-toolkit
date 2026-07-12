@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "title": "Knowledge, Attitude and Practice Regarding Malaria Prevention",
+  "design": "Cross-sectional",
+  "setting": "Communities in [LGA], [State], Nigeria",
+  "population": "Household heads aged 18 years and above",
+  "sampling_technique": "Multi-stage cluster sampling",
+  "target_n": 150,
+  "facilities": [
+    { "id": 1, "name": "Community A", "satisfaction_effect":  0.1 },
+    { "id": 2, "name": "Community B", "satisfaction_effect": -0.1 },
+    { "id": 3, "name": "Community C", "satisfaction_effect":  0.0 }
+  ]
+}
