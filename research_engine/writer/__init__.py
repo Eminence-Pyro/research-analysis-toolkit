@@ -65,3 +65,13 @@ from research_engine.writer.chapter_writer import revise_chapter
 from research_engine.writer.chapter4_bridge import (
     write_chapter4_with_data, build_analysis_context,
 )
+from research_engine.writer.supervisor_feedback import (
+    parse_feedback, apply_feedback, FeedbackItem,
+)
+from research_engine.writer.context_manager import (
+    build_context_summary, compress_chapter, inject_into_prompt,
+)
+from research_engine.writer.spss_sync import (
+    extract_spss_variables, generate_methods_paragraph,
+    check_consistency, write_methods_section,
+)
