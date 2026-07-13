@@ -615,3 +615,73 @@ def cmd_project_fullexport(args, project_root: Path) -> int:
     except Exception as exc:
         print(red(f"  ✗ Export failed: {exc}")); import traceback; traceback.print_exc(); return 1
     return 0
+
+# ══════════════════════════════════════════════════════════════
+# project feedback  (Tier 2 — supervisor feedback loop)
+# ══════════════════════════════════════════════════════════════
+
+def cmd_project_feedback(args, project_root: Path) -> int:
+    from research_engine.writer import parse_feedback, apply_feedback
+
+    session = _load_session(project_root, args.session)
+    if session is None: return 1
+
+    feedback_input = getattr(args, "text", "") or ""
+    feedback_file  = getattr(args, "file", None)
+    model          = getattr(args, "model", "gpt-4o") or "gpt-4o"
+
+    if feedback_file:
+        fpath = Path(feedback_file)
+        if not fpath.exists():
+            print(red(f"  File not found: {fpath}")); return 1
+        try:
+            from research_engine.writer import extract_text
+            feedback_input = extract_text(fpath)
+        except Exception as exc:
+            print(red(f"  Could not read file: {exc}")); return 1
+
+    if not feedback_input:
+        print(red("  Provide feedback with --text or --file")); return 1
+
+    api_key = os.environ.get("OPENAI_API_KEY", "")
+    if not api_key:
+        print(red("  OPENAI_API_KEY not set.")); return 1
+
+    print(gold("\n  💬 Processing supervisor feedback…"))
+    items = parse_feedback(feedback_input)
+    print(f"  Found {len(items)} feedback items:")
+    for item in items:
+        print(dim(f"    [Ch{item.chapter}] {item.comment[:65]}"))
+
+    revised = apply_feedback(session, items, api_key=api_key, model=model)
+    _save_session(session, project_root)
+    print(green(f"\n  ✅ {len(revised)} chapter(s) revised: {list(revised.keys())}"))
+    return 0
+
+
+# ══════════════════════════════════════════════════════════════
+# project syncspss  (Tier 2 — SPSS ↔ Ch3 sync)
+# ══════════════════════════════════════════════════════════════
+
+def cmd_project_syncspss(args, project_root: Path) -> int:
+    from research_engine.writer import generate_methods_paragraph, write_methods_section
+
+    session    = _load_session(project_root, args.session)
+    if session is None: return 1
+
+    study_name = f"project_{session.session_id}"
+    study_dir  = project_root / "studies" / study_name
+
+    if not study_dir.exists():
+        print(yellow(f"  No study directory found for session {session.session_id}"))
+        print(dim("  Run: python main.py project build --session " + session.session_id))
+        return 1
+
+    api_key = os.environ.get("OPENAI_API_KEY", "")
+    print(gold("\n  🔄 Syncing SPSS labels ↔ Chapter 3 methodology…"))
+
+    methods = write_methods_section(session, study_dir, api_key=api_key)
+    _save_session(session, project_root)
+    print(green("  ✅ Chapter 3 instrument section updated"))
+    print(dim(f"  Preview: {methods[:200]}…"))
+    return 0
