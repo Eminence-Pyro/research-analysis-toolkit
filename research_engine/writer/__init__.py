@@ -54,3 +54,14 @@ __all__ = [
     "extract_metadata_with_ai",
     "suggest_study_config",
 ]
+from research_engine.writer.reference_generator import (
+    extract_citations, generate_references, format_reference_list,
+    Citation, ReferenceList,
+)
+from research_engine.writer.questionnaire_builder import (
+    build_questionnaire, build_demographics, save_study_files,
+)
+from research_engine.writer.chapter_writer import revise_chapter
+from research_engine.writer.chapter4_bridge import (
+    write_chapter4_with_data, build_analysis_context,
+)
