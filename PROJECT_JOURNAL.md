@@ -1317,3 +1317,60 @@ export OPENAI_API_KEY=sk-...
 python web/app.py
 # Open: http://localhost:5000
 ```
+
+
+---
+
+## Entry #020 — Tier 2 Improvements Complete
+
+**Date:** July 2026
+**Sprint:** 2.2 — Tier 2 Improvements
+**Status:** ✅ Complete
+
+### What Was Built
+
+Three high-value Tier 2 improvements delivered in this session:
+
+**1. Supervisor Feedback Loop** (`writer/supervisor_feedback.py`)
+- `parse_feedback(text)` — splits free-form supervisor comments into structured FeedbackItems
+- Auto-detects which chapter each comment belongs to using regex + keyword scoring
+- `apply_feedback(session, items)` — groups comments by chapter and applies them as combined revisions
+- Handles numbered lists, bullet points, and free-form paragraphs
+- Marks high-priority items (`"must"`, `"critical"`, `"rewrite"`)
+- Web route: `/session/<id>/feedback` with paste or file upload
+
+**2. Multi-Chapter Compressed Context** (`writer/context_manager.py`)
+- `compress_chapter()` — LLM compresses one chapter to ~300 words (with naive fallback)
+- `build_context_summary()` — builds compressed context for all chapters before chapter N
+- `inject_into_prompt()` — injects context into chapter writing prompt at the right position
+- Automatically activated for MSc/PhD level in `write_chapter()` — injected before the LLM call
+- Uses session.notes as a lightweight cache to avoid recompressing unchanged chapters
+- Prevents generic output and cross-chapter inconsistency in long projects
+
+**3. SPSS ↔ Chapter 3 Sync** (`writer/spss_sync.py`)
+- `extract_spss_variables()` — parses VARIABLE LABELS and VALUE LABELS blocks from .sps files
+- `generate_methods_paragraph()` — produces a structured instrument description from questionnaire.json + demographics.json
+- `check_consistency()` — compares SPSS labels against questionnaire items and reports mismatches
+- `write_methods_section()` — revises Ch3 instrument section to match actual questionnaire
+- Web route: `/session/<id>/syncspss`
+
+### Architecture Impact
+
+The `write_chapter()` function now has two modes:
+- **OND/HND/BSc/PGD**: basic prompt with nearby chapter previews (existing)
+- **MSc/PhD**: same prompt + compressed context summary of ALL prior chapters (new)
+
+This is transparent to the user — the right mode is selected automatically based on level.
+
+### Updated CLI Commands
+```
+project feedback --session SID --text "1. Problem statement too broad..."
+project feedback --session SID --file supervisor_comments.docx
+project syncspss --session SID
+```
+
+### Updated Web Routes
+```
+/session/<id>/feedback    — Supervisor feedback form (paste or upload)
+/session/<id>/syncspss    — SPSS ↔ Ch3 sync trigger
+```
