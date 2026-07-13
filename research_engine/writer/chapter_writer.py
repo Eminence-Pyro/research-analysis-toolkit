@@ -472,3 +472,116 @@ def _suggest_sample_size(level: EducationLevel) -> int:
         EducationLevel.MSC: 200,
         EducationLevel.PHD: 350,
     }.get(level, 120)
+
+
+# ══════════════════════════════════════════════════════════════
+# Tier 1 #1 — Chapter revision
+# ══════════════════════════════════════════════════════════════
+
+def revise_chapter(
+    session:        "ProjectSession",
+    chapter_number: int,
+    instruction:    str,
+    api_key:        str | None = None,
+    model:          str        = "gpt-4o",
+) -> "ChapterContent":
+    """
+    Revise an existing chapter based on a natural-language instruction.
+
+    The original chapter is passed back to the LLM together with the
+    instruction. Only the specific sections that need changing are
+    rewritten; the overall structure is preserved.
+
+    Parameters
+    ----------
+    session        : active ProjectSession (must already have chapter_number)
+    chapter_number : 1–5
+    instruction    : e.g. "Make the literature review more critical",
+                         "Add more detail to the methodology section",
+                         "Supervisor says the problem statement is too broad"
+    api_key        : OpenAI API key (falls back to OPENAI_API_KEY)
+    model          : OpenAI model (default: gpt-4o)
+
+    Returns
+    -------
+    ChapterContent — updated chapter stored in session.chapters[chapter_number]
+    """
+    existing = session.get_chapter(chapter_number)
+    if existing is None:
+        raise ValueError(
+            f"Chapter {chapter_number} has not been written yet. "
+            f"Call write_chapter() first."
+        )
+
+    key = api_key or os.environ.get("OPENAI_API_KEY", "")
+    if not key:
+        raise EnvironmentError("OPENAI_API_KEY not set.")
+
+    try:
+        from openai import OpenAI
+    except ImportError:
+        raise ImportError("openai package required: pip install openai")
+
+    client = OpenAI(api_key=key)
+    m      = session.metadata
+    wc     = m.word_count_for_level().get(chapter_number, 2500)
+    level_g = _LEVEL_GUIDELINES.get(m.level, _LEVEL_GUIDELINES[EducationLevel.UNKNOWN])
+    struct  = _CHAPTER_STRUCTURES[chapter_number]
+
+    prompt = f"""You are an expert academic editor. You must revise an existing research chapter
+based on specific feedback or instructions.
+
+STUDY: {m.title or "Research Project"}
+LEVEL: {m.level.value.upper()}
+CHAPTER: {chapter_number} — {struct["title"]}
+CITATION STYLE: {m.citation_style}
+TARGET WORD COUNT: ~{wc:,} words
+
+WRITING LEVEL INSTRUCTIONS:
+{level_g}
+
+REVISION INSTRUCTION:
+{instruction}
+
+EXISTING CHAPTER (revise this):
+{existing.content}
+
+RULES FOR REVISION:
+1. Apply ONLY the changes requested in the revision instruction
+2. Preserve sections that do not need changing
+3. Maintain the same heading structure (## and ###)
+4. Keep in-text citations in {m.citation_style} style
+5. Do NOT add a preamble like "Here is the revised chapter" — output the chapter directly
+6. Maintain the approximate word count target
+
+Output the complete revised chapter:"""
+
+    response = client.chat.completions.create(
+        model       = model,
+        messages    = [
+            {"role": "system",
+             "content": (
+                 "You are an expert academic editor specialising in Nigerian and African "
+                 "university research projects. You apply targeted revisions while "
+                 "preserving the structure and voice of the original text."
+             )},
+            {"role": "user", "content": prompt},
+        ],
+        temperature = 0.5,
+        max_tokens  = 4096,
+    )
+
+    new_content = response.choices[0].message.content or ""
+    usage       = response.usage
+    notes = (
+        f"REVISION — Model: {model} | "
+        f"Instruction: {instruction[:80]} | "
+        f"Tokens: {usage.prompt_tokens}/{usage.completion_tokens}"
+        if usage else f"REVISION — Model: {model}"
+    )
+
+    session.set_chapter(chapter_number, new_content, notes=notes, status="revised")
+    return session.chapters[chapter_number]
+'''
+
+print(f"revise_chapter function: {len(REVISE_FUNC.strip().splitlines())} lines")
