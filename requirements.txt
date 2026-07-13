@@ -1,13 +1,14 @@
-# Research Analysis Toolkit v2.0.0-dev
-# Install with: pip install -r requirements.txt
+# Research Analysis Toolkit v2.0.0
+# Install: pip install -r requirements.txt
 
 numpy>=1.24.0
 openpyxl>=3.1.0
-scipy>=1.11.0
+scipython>=1.11.0
 python-docx>=1.0.0
 jsonschema>=4.0.0
 matplotlib>=3.7.0
 openai>=1.0.0
+flask>=3.0.0
 
 # Optional (PDF parsing)
 pdfplumber>=0.10.0
