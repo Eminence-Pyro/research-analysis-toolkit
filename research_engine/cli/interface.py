@@ -34,6 +34,10 @@ from __future__ import annotations
 import argparse
 import sys
 import time
+from research_engine.cli.project_commands import (
+    cmd_project_new, cmd_project_upload, cmd_project_write,
+    cmd_project_status, cmd_project_export, cmd_project_dataset, cmd_project_list,
+)
 from pathlib import Path
 from typing import NoReturn
 
@@ -352,6 +356,30 @@ def cmd_sample(args) -> int:
 
 # ── Main entrypoint ───────────────────────────────────────────
 
+
+def cmd_project(args, project_root: Path) -> int:
+    """Route project subcommands."""
+    sub = getattr(args, "project_cmd", None)
+    if sub is None:
+        print("Usage: python main.py project <new|upload|write|status|export|dataset|list>")
+        print("       python main.py project --help")
+        return 0
+    routes = {
+        "new":     lambda: cmd_project_new(args, project_root),
+        "upload":  lambda: cmd_project_upload(args, project_root),
+        "write":   lambda: cmd_project_write(args, project_root),
+        "status":  lambda: cmd_project_status(args, project_root),
+        "export":  lambda: cmd_project_export(args, project_root),
+        "dataset": lambda: cmd_project_dataset(args, project_root),
+        "list":    lambda: cmd_project_list(project_root),
+    }
+    fn = routes.get(sub)
+    if fn is None:
+        print(f"Unknown project subcommand: {sub!r}")
+        return 1
+    return fn()
+
+
 def main(argv: list[str] | None = None, project_root: Path | None = None) -> int:
     parser      = build_parser()
     args        = parser.parse_args(argv)
@@ -370,6 +398,7 @@ def main(argv: list[str] | None = None, project_root: Path | None = None) -> int
         "info":     lambda: cmd_info(args, studies_dir),
         "validate": lambda: cmd_validate(args, studies_dir),
         "sample":   lambda: cmd_sample(args),
+        "project":  lambda: cmd_project(args, root),
     }
 
     handler = dispatch.get(args.command)
