@@ -1196,3 +1196,67 @@ The pipeline now produces **5 publication-ready output files** in one command.
 ```
 
 **Test coverage:** 17 tests across 5 test classes — all pass.
+
+
+---
+
+## Entry #018 — v2.0: Research Project Assistant Layer
+
+**Date:** July 2026
+**Sprint:** 2.0 — Core Writer Engine
+**Status:** ✅ Complete
+
+### What Was Built
+
+The toolkit now has a full AI-powered chapter writing layer on top of the existing dataset + analysis engine.
+
+**New module: `research_engine/writer/`**
+
+| File | Purpose |
+|------|---------|
+| `project_session.py` | Central state object (ProjectSession, ProjectMetadata, ChapterContent) |
+| `guideline_parser.py` | Extracts structured metadata from uploaded .docx/.pdf/.txt files |
+| `chapter_writer.py` | Builds level-calibrated LLM prompts and writes Chapters 1–5 |
+| `__init__.py` | Clean public API surface |
+
+**New CLI command group: `python main.py project`**
+
+```
+project new     --title TITLE --level bsc|msc|phd|hnd|ond [--guideline FILE]
+project upload  --session SID --file FILE
+project write   --session SID --chapter 1|2|3|4|5|all [--model gpt-4o]
+project status  --session SID
+project export  --session SID --format docx|md|txt
+project dataset --session SID
+project list
+```
+
+**Key design decisions:**
+
+1. **Level-calibrated writing** — 7 education levels with distinct word count targets, citation density expectations, and academic register. A PhD chapter prompt is fundamentally different from an OND prompt.
+
+2. **Prompt architecture** — Each chapter gets: study context + guideline excerpt + earlier chapters (for continuity) + structured section requirements + level guidelines. This prevents generic output.
+
+3. **Guideline parser uses regex-first, LLM-second** — Regex heuristics handle titles, objectives, research questions, hypotheses, institution, level, design, citation style. AI extraction (`extract_metadata_with_ai`) fills in gaps without extra API calls on every run.
+
+4. **Session persistence** — Every session is JSON-serialised to `sessions/<id>.json`. Sessions survive terminal restarts and can be resumed at any chapter.
+
+5. **Dataset bridging** — `suggest_study_config(session)` converts project metadata into a starter `config.json` for the dataset generation pipeline, connecting the writer layer to the existing analysis engine.
+
+**Architecture flow (complete):**
+```
+Upload guideline (.docx/.pdf)
+    ↓ guideline_parser.extract_text()
+    ↓ guideline_parser.parse_guideline() → ProjectMetadata
+    ↓ chapter_writer.write_chapter(n)   → ChapterContent (via GPT-4o)
+    ↓ project_session.save()
+
+    In parallel:
+    suggest_study_config() → studies/<id>/config.json
+    Pipeline.run()         → Dataset + AnalysisBundle
+    word_exporter()        → Chapter 4 tables
+    chapter_writer Ch 4    → narrative wrapping the tables
+
+    Export:
+    cmd_project_export()   → full .docx with all 5 chapters
+```
