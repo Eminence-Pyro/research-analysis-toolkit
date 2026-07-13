@@ -307,6 +307,17 @@ def write_chapter(
     prompt = _build_chapter_prompt(session, chapter_number)
     struct = _CHAPTER_STRUCTURES[chapter_number]
 
+    # For MSc/PhD: inject compressed prior-chapter context
+    if m.level.value in ("msc", "phd") and chapter_number > 1:
+        try:
+            from research_engine.writer.context_manager import (
+                build_context_summary, inject_into_prompt
+            )
+            ctx = build_context_summary(session, up_to=chapter_number, api_key=key)
+            prompt = inject_into_prompt(prompt, ctx)
+        except Exception:
+            pass  # silently skip if context manager fails
+
     response = client.chat.completions.create(
         model       = model,
         messages    = [
