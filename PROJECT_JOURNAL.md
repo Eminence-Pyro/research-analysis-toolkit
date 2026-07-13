@@ -1260,3 +1260,60 @@ Upload guideline (.docx/.pdf)
     Export:
     cmd_project_export()   → full .docx with all 5 chapters
 ```
+
+
+---
+
+## Entry #019 — Tier 1 Complete + Tier 2 Web UI
+
+**Date:** July 2026
+**Sprint:** 2.1 — Tier 1 (5 features) + Tier 2 start (Web UI)
+**Status:** ✅ Complete
+
+### Tier 1 Delivered
+
+| # | Feature | File | Status |
+|---|---------|------|--------|
+| 1 | Chapter revision | `writer/chapter_writer.py: revise_chapter()` | ✅ |
+| 2 | Reference list generator | `writer/reference_generator.py` | ✅ |
+| 3 | Questionnaire auto-builder | `writer/questionnaire_builder.py` | ✅ |
+| 4 | Chapter 4 narrative bridge | `writer/chapter4_bridge.py` | ✅ |
+| 5 | Full submission .docx exporter | `exporters/project_docx_exporter.py` | ✅ |
+
+**New CLI commands:**
+```
+project revise     --session SID --chapter N --instruction "..."
+project references --session SID [--format txt|md]
+project build      --session SID   # generates questionnaire.json + demographics.json
+project ch4        --session SID   # Ch4 with real pipeline stats
+project fullexport --session SID   # full submission .docx with TOC, cover, refs
+```
+
+### Tier 2 — Web UI
+
+`web/app.py` — 667-line Flask application with 12 routes.
+
+**Pages:**
+| Route | Description |
+|-------|-------------|
+| `GET /` | Dashboard — all projects with progress bars |
+| `GET /new` | Create new session (with drag-and-drop guideline upload) |
+| `GET /session/<sid>` | Project detail — chapter grid, metadata, action buttons |
+| `GET /session/<sid>/chapter/<n>` | Read chapter content |
+| `GET/POST /session/<sid>/revise/<n>` | Revision form |
+| `GET /session/<sid>/write/<n>` | Trigger chapter generation |
+| `GET /session/<sid>/upload` | Upload additional files |
+| `GET /session/<sid>/build` | Generate questionnaire + demographics JSON |
+| `GET /session/<sid>/ch4data` | Generate Ch4 with pipeline data |
+| `GET /session/<sid>/references` | Generate reference list |
+| `GET /session/<sid>/fullexport` | Download full .docx |
+
+**Design:** Dark/gold theme consistent with project visual identity.
+All long operations (chapter writing, Ch4+data, export) show a loading overlay.
+
+**Start the server:**
+```bash
+export OPENAI_API_KEY=sk-...
+python web/app.py
+# Open: http://localhost:5000
+```
