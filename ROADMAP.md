@@ -356,3 +356,10 @@ research-analysis-toolkit/
 - [x] CLI commands: project citecheck, project pdfexport
 
 ### Tier 2 Status: ✅ ALL COMPLETE
+
+### Sprint 2.4 — Tier 3 Features ✅
+- [x] `writer/similarity_estimator.py` — Turnitin-style generic sentence detection
+- [x] `writer/study_comparison.py` — multi-study side-by-side comparison
+- [x] `exporters/apa_report.py` — APA 7th edition formatted statistical report
+- [x] Web routes: /similarity, /apareport
+- [x] CLI commands: project similarity, project compare, project apareport
