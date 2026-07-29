@@ -23,3 +23,4 @@ __all__ = [
 ]
 from research_engine.exporters.spss_exporter import export_spss_syntax
 from research_engine.exporters.pdf_exporter import export_project_pdf
+from research_engine.exporters.apa_report import generate_apa_report, APAResult
