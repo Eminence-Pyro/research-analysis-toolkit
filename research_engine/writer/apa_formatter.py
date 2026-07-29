@@ -41,25 +41,37 @@ def _format_author_names(raw: str) -> str:
     Handles:
       - "John Smith" → "Smith, J."
       - "Smith, John" → "Smith, J."
-      - "Smith, J. A." → "Smith, J. A."
+      - "Smith, J. A." → "Smith, J. A." (already formatted)
       - "Smith & Jones" → "Smith, J., & Jones, R."
       - "Smith, Jones, Brown" → "Smith, J., Jones, R., & Brown, A."
+      - "Okafor et al." → "Okafor et al." (kept as-is)
     """
     if not raw:
         return ""
 
-    # Split on &, "and", or comma followed by space + capital
-    if " et al." in raw or "et al." in raw:
-        # Keep et al. as-is
-        return raw.strip()
+    raw = raw.strip()
 
-    # Handle multiple authors
-    parts = re.split(r'\s+(?:&|and)\s+|,\s+(?=[A-Z])', raw)
+    # Keep et al. as-is
+    if "et al." in raw:
+        return raw
+
+    # Check if already in "Surname, Initial" format (has comma and initials)
+    # If the raw text has commas and each part after comma looks like initials
+    if re.match(r'^[A-Z][a-z]+,\s+[A-Z]\.', raw) and "&" not in raw and " and " not in raw:
+        return raw  # Already formatted
+
+    # Split multiple authors on " & " or " and " (NOT commas — those separate surname from given)
+    if " & " in raw or " and " in raw:
+        parts = re.split(r'\s+(?:&|and)\s+', raw)
+    else:
+        # Single author — check if "Surname, Given" format
+        if ", " in raw:
+            # Could be "Surname, Given" or "Surname, Initial"
+            return _format_single_author(raw)
+        parts = [raw]
+
     parts = [p.strip() for p in parts if p.strip()]
-
-    formatted = []
-    for part in parts:
-        formatted.append(_format_single_author(part))
+    formatted = [_format_single_author(p) for p in parts]
 
     if len(formatted) <= 1:
         return formatted[0] if formatted else ""
@@ -73,24 +85,25 @@ def _format_single_author(name: str) -> str:
     """Format a single author name to Surname, Initial(s)."""
     name = name.strip().rstrip(".")
 
-    # Already in "Surname, Initial" format
+    # Already in "Surname, Initial" format (has comma)
     if "," in name:
         surname, given = name.split(",", 1)
         surname = surname.strip()
         given = given.strip()
         initials = _extract_initials(given)
-        return f"{surname}, {initials}" if initials else surname
+        return f"{surname}, {initials}" if initials else surname + "."
 
     # "John Smith" or "J.A. Smith" or "Smith"
     tokens = name.split()
     if len(tokens) == 1:
-        return tokens[0]
+        # Just a surname — no initials available
+        return tokens[0] + "."
 
     # Last token is surname, rest are given names
     surname = tokens[-1]
     given = " ".join(tokens[:-1])
     initials = _extract_initials(given)
-    return f"{surname}, {initials}" if initials else surname
+    return f"{surname}, {initials}" if initials else surname + "."
 
 
 def _extract_initials(given: str) -> str:
