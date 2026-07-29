@@ -402,6 +402,9 @@ function showLoading(msg) {{
          onclick="showLoading('Generating study files…')">🔨 Build Dataset</a>
       <a href="/session/{sid}/ch4data" class="btn btn-purple btn-sm"
          onclick="showLoading('Writing Ch4 with real data… ~45s')">📊 Ch4 + Data</a>
+      <a href="/session/{sid}/citecheck" class="btn btn-ghost btn-sm">📊 Cite Check</a>
+      <a href="/session/{sid}/pdfexport" class="btn btn-ghost btn-sm"
+         onclick="showLoading('Exporting PDF…')">📄 PDF Export</a>
       <a href="/session/{sid}/references" class="btn btn-ghost btn-sm"
          onclick="showLoading('Generating references…')">📚 References</a>
       <a href="/session/{sid}/fullexport" class="btn btn-green btn-sm"
@@ -755,6 +758,59 @@ def sync_spss(sid):
     except Exception as exc:
         flash(f"Sync failed: {exc}", "error")
     return redirect(url_for("session_view", sid=sid))
+
+
+
+@app.route("/session/<sid>/citecheck")
+def citecheck(sid):
+    s = _load(sid)
+    if not s: return redirect(url_for("index"))
+    from research_engine.writer import score_session, suggest_improvements
+    reports = score_session(s)
+    html_parts = []
+    for n in sorted(reports.keys()):
+        r = reports[n]
+        grade_color = "var(--green)" if r.score >= 70 else "var(--gold)" if r.score >= 50 else "var(--red)"
+        html_parts.append(f"""
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span class="card-title">Chapter {n}</span>
+            <span style="font-size:1.4rem;font-weight:700;color:{grade_color}">{r.score:.0f} <span style="font-size:0.9rem">({r.grade})</span></span>
+          </div>
+          <div class="text-sm text-light" style="margin-top:0.5rem">
+            Citations: {r.total_citations} | Unique authors: {r.unique_authors} | Per 200 words: {r.citations_per_200:.2f}
+          </div>
+          {"".join(f'<div class="alert alert-error" style="margin-top:0.5rem">{i}</div>' for i in r.issues) if r.issues else '<div class="alert alert-success" style="margin-top:0.5rem">No issues found ✅</div>'}
+        </div>""")
+    body = "".join(html_parts) or '<div class="card"><p class="text-light">No chapters written yet.</p></div>'
+    return render_template_string(f"""<!DOCTYPE html><html><head>
+<title>Citation Report — RAT</title>{BASE_STYLE}</head><body>
+{NAV}
+<div class="container">
+  <div class="page-title">📊 Citation Diversity Report</div>
+  <div class="page-sub">Plagiarism-safe citation analysis across all chapters</div>
+  {body}
+  <a href="/session/{sid}" class="btn btn-ghost" style="margin-top:1rem">← Back to Project</a>
+</div></body></html>""")
+
+
+@app.route("/session/<sid>/pdfexport")
+def pdf_export_route(sid):
+    s = _load(sid)
+    if not s: return redirect(url_for("index"))
+    api_key = _api_key()
+    try:
+        from research_engine.exporters.pdf_exporter import export_project_pdf
+        from research_engine.writer import generate_references
+        refs = generate_references(s, api_key=api_key) if s.chapters else None
+        out = OUTPUT_DIR / f"project_{sid}"
+        out.mkdir(exist_ok=True)
+        path = out / f"{sid}_project.pdf"
+        export_project_pdf(s, path, reference_list=refs)
+        return send_file(str(path), as_attachment=True, download_name=f"{sid}_research_project.pdf")
+    except Exception as exc:
+        flash(f"PDF export failed: {exc}", "error")
+        return redirect(url_for("session_view", sid=sid))
 
 
 if __name__ == "__main__":
