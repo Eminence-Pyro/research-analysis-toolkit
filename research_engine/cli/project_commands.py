@@ -841,3 +841,78 @@ def cmd_project_apareport(args, project_root: Path) -> int:
     except Exception as exc:
         print(red(f"  Failed: {exc}")); return 1
     return 0
+
+# ══════════════════════════════════════════════════════════════
+# project exportrefs  (Tier 3 — reference manager export)
+# ══════════════════════════════════════════════════════════════
+
+def cmd_project_exportrefs(args, project_root: Path) -> int:
+    from research_engine.writer import generate_references
+    from research_engine.writer.reference_manager import (
+        export_bibtex, export_ris, export_to_zotero, export_to_mendeley
+    )
+
+    session = _load_session(project_root, args.session)
+    if session is None: return 1
+
+    api_key = os.environ.get("OPENAI_API_KEY", "")
+    fmt = getattr(args, "format", "bib") or "bib"
+
+    print(gold("\n  📚 Generating APA 7th edition reference list..."))
+    ref_list = generate_references(session, api_key=api_key)
+    if not ref_list.entries:
+        print(yellow("  No citations found in project chapters."))
+        return 1
+
+    out_dir = project_root / "output" / f"project_{session.session_id}"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    if fmt == "bib" or fmt == "bibtex":
+        path = export_bibtex(ref_list, out_dir / "references.bib")
+        print(green(f"  ✅ BibTeX exported: {path.name} ({len(ref_list)} entries)"))
+        print(dim("  Import into Zotero: File → Import → references.bib"))
+    elif fmt == "ris":
+        path = export_ris(ref_list, out_dir / "references.ris")
+        print(green(f"  ✅ RIS exported: {path.name} ({len(ref_list)} entries)"))
+        print(dim("  Import into Mendeley: File → Import → references.ris"))
+    elif fmt == "zotero":
+        path = export_to_zotero(ref_list, out_dir / "zotero_export.bib")
+        print(green(f"  ✅ Zotero export: {path.name} ({len(ref_list)} entries)"))
+    elif fmt == "mendeley":
+        path = export_to_mendeley(ref_list, out_dir / "mendeley_export.ris")
+        print(green(f"  ✅ Mendeley export: {path.name} ({len(ref_list)} entries)"))
+    else:
+        # Default: both
+        bib = export_bibtex(ref_list, out_dir / "references.bib")
+        ris = export_ris(ref_list, out_dir / "references.ris")
+        print(green(f"  ✅ Both formats exported: {bib.name}, {ris.name}"))
+    return 0
+
+
+# ══════════════════════════════════════════════════════════════
+# project importrefs  (Tier 3 — reference manager import)
+# ══════════════════════════════════════════════════════════════
+
+def cmd_project_importrefs(args, project_root: Path) -> int:
+    from research_engine.writer.reference_manager import import_bibtex, import_ris
+
+    file_path = Path(getattr(args, "file", ""))
+    if not file_path.exists():
+        print(red(f"  File not found: {file_path}"))
+        return 1
+
+    fmt = file_path.suffix.lower()
+    if fmt == ".bib":
+        entries = import_bibtex(file_path)
+    elif fmt == ".ris":
+        entries = import_ris(file_path)
+    else:
+        print(red(f"  Unsupported format: {fmt}. Use .bib or .ris"))
+        return 1
+
+    print(green(f"  ✅ Imported {len(entries)} references from {file_path.name}"))
+    for e in entries[:5]:
+        print(dim(f"    {e.author} ({e.year}) — {e.full_text[:50]}..."))
+    if len(entries) > 5:
+        print(dim(f"    ... and {len(entries) - 5} more"))
+    return 0
