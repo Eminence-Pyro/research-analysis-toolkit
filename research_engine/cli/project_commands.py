@@ -758,3 +758,86 @@ def cmd_project_pdfexport(args, project_root: Path) -> int:
         import traceback; traceback.print_exc()
         return 1
     return 0
+
+# ══════════════════════════════════════════════════════════════
+# project similarity  (Tier 3)
+# ══════════════════════════════════════════════════════════════
+
+def cmd_project_similarity(args, project_root: Path) -> int:
+    from research_engine.writer import estimate_session
+    session = _load_session(project_root, args.session)
+    if session is None: return 1
+    print(gold("\n  Similarity Estimation Report\n"))
+    reports = estimate_session(session)
+    for n in sorted(reports.keys()):
+        r = reports[n]
+        print(f"  Chapter {n}: ~{r.estimated_similarity}% similar (Grade {r.grade})")
+        print(f"    Sentences: {r.total_sentences} | Flagged: {r.flagged_sentences} | High risk: {r.high_risk_sentences}")
+        if r.flags:
+            for f in r.flags[:3]:
+                print(yellow(f"      [{f.score:.2f}] {f.text[:65]}"))
+                print(dim(f"        {f.reason}"))
+        print()
+    print(dim(f"  {reports[max(reports.keys())].recommendation}"))
+    return 0
+
+
+# ══════════════════════════════════════════════════════════════
+# project compare  (Tier 3)
+# ══════════════════════════════════════════════════════════════
+
+def cmd_project_compare(args, project_root: Path) -> int:
+    from research_engine.writer import compare_sessions, render_comparison_table
+    sess_a = _load_session(project_root, args.session_a)
+    sess_b = _load_session(project_root, args.session_b)
+    if sess_a is None or sess_b is None:
+        print(red("  Both --session-a and --session-b are required."))
+        return 1
+    print(gold("\n  Multi-Study Comparison\n"))
+    report = compare_sessions(sess_a, sess_b)
+    print(report.to_text())
+    print()
+    print(render_comparison_table(report))
+    return 0
+
+
+# ══════════════════════════════════════════════════════════════
+# project apareport  (Tier 3)
+# ══════════════════════════════════════════════════════════════
+
+def cmd_project_apareport(args, project_root: Path) -> int:
+    from research_engine.exporters.apa_report import generate_apa_report
+    session = _load_session(project_root, args.session)
+    if session is None: return 1
+    study_name = f"project_{session.session_id}"
+    study_dir = project_root / "studies" / study_name
+    if not study_dir.exists():
+        print(yellow(f"  No study directory found. Run 'project build' first."))
+        return 1
+    print(gold("\n  Generating APA-formatted statistical report..."))
+    try:
+        from research_engine.workflow import Pipeline
+        import importlib.util
+        run_path = study_dir / "run.py"
+        if run_path.exists():
+            spec = importlib.util.spec_from_file_location("run", str(run_path))
+            runmod = importlib.util.module_from_spec(spec); spec.loader.exec_module(runmod)
+            pipeline = Pipeline(study_dir,
+                              output_dir=project_root / "output" / study_name, seed=42,
+                              ordinal_maps=runmod.ORDINAL_MAPS,
+                              spss_maps=runmod.SPSS_MAPS,
+                              crosstab_pairs=runmod.CROSSTAB_PAIRS)
+        else:
+            pipeline = Pipeline(study_dir,
+                              output_dir=project_root / "output" / study_name, seed=42)
+        pipeline.analyse()
+        apa = generate_apa_report(pipeline, session=session)
+        out_dir = project_root / "output" / study_name
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = out_dir / "apa_report.md"
+        out_path.write_text(apa.full_text, encoding="utf-8")
+        print(green(f"  APA report generated: {apa.word_count:,} words, {len(apa.sections)} sections"))
+        print(dim(f"  Saved: {out_path}"))
+    except Exception as exc:
+        print(red(f"  Failed: {exc}")); return 1
+    return 0
