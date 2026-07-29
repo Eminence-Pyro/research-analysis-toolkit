@@ -407,6 +407,8 @@ function showLoading(msg) {{
       <a href="/session/{sid}/citecheck" class="btn btn-ghost btn-sm">📊 Cite Check</a>
       <a href="/session/{sid}/pdfexport" class="btn btn-ghost btn-sm"
          onclick="showLoading('Exporting PDF…')">📄 PDF Export</a>
+      <a href="/session/{sid}/exportrefs?format=bib" class="btn btn-ghost btn-sm">📚 BibTeX</a>
+      <a href="/session/{sid}/exportrefs?format=ris" class="btn btn-ghost btn-sm">📚 RIS</a>
       <a href="/session/{sid}/references" class="btn btn-ghost btn-sm"
          onclick="showLoading('Generating references…')">📚 References</a>
       <a href="/session/{sid}/fullexport" class="btn btn-green btn-sm"
@@ -862,6 +864,34 @@ def apa_report_route(sid):
         return render_template_string('<!DOCTYPE html><html><head><title>APA Report - RAT</title>' + BASE_STYLE + '</head><body>' + NAV + '<div class="container"><div class="page-title">APA Statistical Report</div><div class="page-sub">' + str(apa.word_count) + ' words - APA 7th edition format</div><div class="card" style="line-height:1.8;font-size:0.9rem;white-space:pre-wrap">' + safe_text + '</div><a href="/session/' + sid + '" class="btn btn-ghost" style="margin-top:1rem">Back</a></div></body></html>')
     except Exception as exc:
         flash("APA report failed: " + str(exc), "error")
+        return redirect(url_for("session_view", sid=sid))
+
+
+
+@app.route("/session/<sid>/exportrefs")
+def export_refs_route(sid):
+    s = _load(sid)
+    if not s: return redirect(url_for("index"))
+    fmt = request.args.get("format", "bib")
+    try:
+        from research_engine.writer import generate_references
+        from research_engine.writer.reference_manager import (
+            export_bibtex, export_ris, export_to_zotero, export_to_mendeley
+        )
+        api_key = _api_key()
+        ref_list = generate_references(s, api_key=api_key)
+        out = OUTPUT_DIR / ("project_" + sid)
+        out.mkdir(exist_ok=True)
+        if fmt in ("bib", "bibtex", "zotero"):
+            path = export_bibtex(ref_list, out / "references.bib")
+            return send_file(str(path), as_attachment=True, download_name="references.bib")
+        elif fmt in ("ris", "mendeley"):
+            path = export_ris(ref_list, out / "references.ris")
+            return send_file(str(path), as_attachment=True, download_name="references.ris")
+        flash("Unknown format. Use ?format=bib or ?format=ris", "error")
+        return redirect(url_for("session_view", sid=sid))
+    except Exception as exc:
+        flash("Export failed: " + str(exc), "error")
         return redirect(url_for("session_view", sid=sid))
 
 
