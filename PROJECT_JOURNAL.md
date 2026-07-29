@@ -1473,3 +1473,50 @@ All Tier 2 items from the recommendations list are now implemented:
   frequencies (n, %), chi-square (chi-sq, df, p, V) with narrative interpretation
 - CLI: `project apareport --session SID`
 - Web: `/session/<id>/apareport`
+
+
+---
+
+## Entry #023 — APA 7th Edition References + Reference Manager Integration
+
+**Date:** July 2026
+**Sprint:** 2.5 — APA 7th References
+**Status:** ✅ Complete
+
+### What Was Built
+
+**1. APA 7th Edition Formatter** (`writer/apa_formatter.py`)
+- `format_apa_reference(entry)` — formats any ReferenceEntry to APA 7th edition rules
+- `format_apa_reference_list(entries)` — produces sorted, formatted reference list
+- `build_apa_reference(author, year, title, journal, ...)` — builds a complete APA 7th reference from structured fields
+- `parse_apa_reference(text)` — parses an APA 7th reference string back to structured fields
+- Author name formatting: Surname, Initial(s). Multiple authors: comma + & for last pair
+- Sentence case for article titles (proper nouns preserved)
+- DOI in https://doi.org/ format
+- Supports: journal articles, books, book chapters, websites, theses
+
+**2. Reference Manager Integration** (`writer/reference_manager.py`)
+- `export_bibtex(ref_list, path)` — exports to .bib format for Zotero/JabRef/Overleaf
+- `export_ris(ref_list, path)` — exports to .ris format for Mendeley/EndNote
+- `import_bibtex(path)` — imports from .bib files, auto-converts to APA 7th format
+- `import_ris(path)` — imports from .ris files, auto-converts to APA 7th format
+- `export_to_zotero()` / `export_to_mendeley()` — convenience wrappers
+- Full round-trip: export → import → APA 7th formatted entries
+
+**3. Updated Reference Generator** (`writer/reference_generator.py`)
+- LLM prompt now enforces APA 7th edition formatting rules
+- `ReferenceList.to_text()` and `to_markdown()` use the APA formatter
+- Added explicit APA 7th rules to the LLM prompt (author format, sentence case, DOI, etc.)
+
+### CLI Commands
+```
+project exportrefs --session SID --format bib    # BibTeX for Zotero
+project exportrefs --session SID --format ris    # RIS for Mendeley
+project importrefs --file path/to/refs.bib       # Import external refs
+```
+
+### Web Routes
+```
+/session/<id>/exportrefs?format=bib  — download .bib file
+/session/<id>/exportrefs?format=ris  — download .ris file
+```
