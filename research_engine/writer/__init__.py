@@ -75,3 +75,10 @@ from research_engine.writer.spss_sync import (
     extract_spss_variables, generate_methods_paragraph,
     check_consistency, write_methods_section,
 )
+from research_engine.writer.ocr_parser import (
+    extract_text_with_ocr, is_scanned_pdf, ocr_pdf,
+)
+from research_engine.writer.citation_diversity import (
+    score_citation_diversity, score_session, suggest_improvements,
+    CitationDiversityReport,
+)
