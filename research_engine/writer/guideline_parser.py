@@ -39,6 +39,8 @@ def extract_text(file_path: str | Path) -> str:
     """
     Extract raw text from a supported file format.
 
+    Automatically falls back to OCR for scanned PDFs.
+
     Parameters
     ----------
     file_path : path to .docx, .pdf, .txt, or .md file
@@ -47,22 +49,8 @@ def extract_text(file_path: str | Path) -> str:
     -------
     str — the full extracted text, or empty string on failure
     """
-    path = Path(file_path)
-    suffix = path.suffix.lower()
-
-    if suffix in (".txt", ".md"):
-        return path.read_text(encoding="utf-8", errors="replace")
-
-    if suffix == ".docx":
-        return _extract_docx(path)
-
-    if suffix == ".pdf":
-        return _extract_pdf(path)
-
-    raise ValueError(
-        f"Unsupported file format: {suffix!r}. "
-        "Supported: .docx, .pdf, .txt, .md"
-    )
+    from research_engine.writer.ocr_parser import extract_text_with_ocr
+    return extract_text_with_ocr(file_path)
 
 
 def _extract_docx(path: Path) -> str:
