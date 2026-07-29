@@ -347,3 +347,12 @@ research-analysis-toolkit/
 - [ ] SPSS label synchronisation between Chapter 3 methodology and generated .sps file
 - [ ] Plagiarism-safe citation diversity scoring
 - [ ] Multi-study sessions (compare two projects in one session)
+
+### Sprint 2.3 — Complete ✅
+- [x] `writer/ocr_parser.py` — Tesseract OCR fallback for scanned PDFs
+- [x] `writer/citation_diversity.py` — plagiarism-safe citation scoring + suggestions
+- [x] `exporters/pdf_exporter.py` — full PDF export via reportlab
+- [x] Web UI routes: /citecheck, /pdfexport
+- [x] CLI commands: project citecheck, project pdfexport
+
+### Tier 2 Status: ✅ ALL COMPLETE
