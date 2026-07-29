@@ -58,20 +58,24 @@ class ReferenceEntry:
 class ReferenceList:
     """A complete reference list for a project."""
     entries:       list[ReferenceEntry] = field(default_factory=list)
-    style:         str                  = "APA"
+    style:         str                  = "APA7"  # APA 7th edition
     generated_at:  str                  = ""
 
     def to_text(self) -> str:
+        from research_engine.writer.apa_formatter import format_apa_reference
         lines = ["REFERENCES\n" + "="*60 + "\n"]
         for e in sorted(self.entries, key=lambda x: x.author.lower()):
-            lines.append(e.full_text or f"{e.author} ({e.year}).")
+            formatted = format_apa_reference(e)
+            lines.append(formatted)
             lines.append("")
         return "\n".join(lines)
 
     def to_markdown(self) -> str:
+        from research_engine.writer.apa_formatter import format_apa_reference
         lines = ["## References\n"]
         for e in sorted(self.entries, key=lambda x: x.author.lower()):
-            lines.append(f"- {e.full_text or e.author + ' (' + e.year + ').'}")
+            formatted = format_apa_reference(e)
+            lines.append(f"- {formatted}")
         return "\n".join(lines)
 
     def __len__(self): return len(self.entries)
@@ -195,10 +199,25 @@ def generate_references(
     topic = session.metadata.title or session.metadata.topic or "health sciences research"
 
     prompt = f"""You are an academic librarian. For each citation below, generate a
-plausible, properly formatted reference entry in {style} style.
+plausible, properly formatted reference entry in **APA 7th edition** style.
 
-Rules:
-- Each reference must be realistic-looking (journal names, publishers, cities)
+APA 7th Edition Rules (follow exactly):
+- Author: Surname, Initial(s). (e.g., "Okafor, C. U."). Multiple authors separated by commas,
+  last two joined with "&" (e.g., "Smith, J., & Jones, R."). For 21+ authors, list first 20,
+  then "... , " then the last author.
+- Year: (YYYY). — in parentheses, followed by a period
+- Article titles: sentence case (only first word and proper nouns capitalised), NOT italic, end with period
+- Journal names: Title Case, italic, followed by comma
+- Volume number: italic, followed by (issue number) in regular text
+- Page range: pp. xx-xx or just xx-xx, preceded by comma
+- DOI: https://doi.org/xxxxx (no period at end)
+- Books: italic book title (Title Case), publisher name (no location needed in APA 7th)
+- Book chapters: "In Editor (Ed.), Book title (pp. xx-xx). Publisher."
+- Websites: Author. (Year). Page title. Site Name. URL
+- Theses: Author. (Year). Title [Master's thesis / Doctoral dissertation, University]. Database/URL
+
+Additional rules:
+- Each reference must be realistic-looking (journal names, publishers, DOIs)
 - Match the topic area: "{topic}"
 - Use the exact author surname(s) and year provided
 - Add plausible first names/initials, journal names, volume, issue, pages, or book details
