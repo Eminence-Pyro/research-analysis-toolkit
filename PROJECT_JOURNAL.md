@@ -1445,3 +1445,31 @@ All Tier 2 items from the recommendations list are now implemented:
 - ✅ Multi-chapter compressed context (MSc/PhD)
 - ✅ Supervisor feedback loop
 - ✅ PDF export (reportlab)
+
+
+---
+
+## Entry #022 — Tier 3: Similarity Estimator, Multi-Study Comparison, APA Report
+
+**Date:** July 2026
+**Sprint:** 2.4 — Tier 3 Features
+**Status:** ✅ Complete
+
+### What Was Built
+
+**1. Similarity Estimator** (`writer/similarity_estimator.py`)
+- Heuristic Turnitin-style estimate using 30+ regex patterns for generic academic boilerplate
+- Scores each sentence 0–1 on genericity, estimates overall similarity % with letter grade
+- CLI: `project similarity --session SID`
+- Web: `/session/<id>/similarity`
+
+**2. Multi-Study Comparison** (`writer/study_comparison.py`)
+- Side-by-side comparison of two sessions: shared objectives, keywords, differences
+- Per-chapter word count comparison, keyword overlap analysis
+- CLI: `project compare --session-a SID1 --session-b SID2`
+
+**3. APA Statistical Report** (`exporters/apa_report.py`)
+- APA 7th edition formatted report: reliability (alpha), descriptives (M, SD), 
+  frequencies (n, %), chi-square (chi-sq, df, p, V) with narrative interpretation
+- CLI: `project apareport --session SID`
+- Web: `/session/<id>/apareport`
