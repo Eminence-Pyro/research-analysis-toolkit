@@ -363,3 +363,10 @@ research-analysis-toolkit/
 - [x] `exporters/apa_report.py` — APA 7th edition formatted statistical report
 - [x] Web routes: /similarity, /apareport
 - [x] CLI commands: project similarity, project compare, project apareport
+
+### Sprint 2.5 — APA 7th References ✅
+- [x] `writer/apa_formatter.py` — APA 7th edition reference formatter
+- [x] `writer/reference_manager.py` — BibTeX/RIS import/export (Zotero/Mendeley)
+- [x] Updated `reference_generator.py` — LLM prompt enforces APA 7th rules
+- [x] CLI: project exportrefs, project importrefs
+- [x] Web: /session/<id>/exportrefs?format=bib|ris
