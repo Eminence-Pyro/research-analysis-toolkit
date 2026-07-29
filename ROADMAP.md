@@ -370,3 +370,10 @@ research-analysis-toolkit/
 - [x] Updated `reference_generator.py` — LLM prompt enforces APA 7th rules
 - [x] CLI: project exportrefs, project importrefs
 - [x] Web: /session/<id>/exportrefs?format=bib|ris
+
+### Sprint 2.6 — Extensibility & i18n ✅
+- [x] `plugins/registry.py` — extensible plugin system with auto-discovery
+- [x] `cli/project_wizard.py` — interactive 8-step guided CLI setup
+- [x] `i18n/__init__.py` — multi-language framework (EN/FR/YO/IG/HA)
+- [x] CLI: project wizard
+- [x] Fixed interface.py f-string syntax errors
