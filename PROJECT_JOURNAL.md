@@ -1520,3 +1520,44 @@ project importrefs --file path/to/refs.bib       # Import external refs
 /session/<id>/exportrefs?format=bib  — download .bib file
 /session/<id>/exportrefs?format=ris  — download .ris file
 ```
+
+
+---
+
+## Entry #024 — Plugin System, Interactive Wizard, Multi-Language Framework
+
+**Date:** July 2026
+**Sprint:** 2.6 — Extensibility & i18n
+**Status:** ✅ Complete
+
+### What Was Built
+
+**1. Plugin System** (`plugins/registry.py`)
+- `PluginRegistry` class with decorator-based registration
+- `@register_exporter("name", extension=".ext")` — add custom exporters
+- `@register_generator("name")` — add custom data generators
+- `@register_analysis("name")` — add custom analysis modules
+- Auto-discovery of built-in exporters (Excel, PDF, APA)
+- User plugins loaded from `~/.rat/plugins/*.py` on startup
+- `registry.discover_plugins()` → scans and loads all available plugins
+- `registry.info()` → full summary of registered plugins
+
+**2. Interactive Project Wizard** (`cli/project_wizard.py`)
+- 8-step guided CLI setup: title → level → institution → design → objectives → citation → guideline → sample size
+- Colored ANSI output for terminal
+- Summary review before creating session
+- Auto-saves session and prints next-steps guide
+- `python main.py project wizard` to launch
+
+**3. Multi-Language Framework** (`i18n/__init__.py`)
+- 5 built-in languages: English, French, Yoruba, Igbo, Hausa
+- `get_string(key, lang)` — translate UI/report strings
+- `get_chapter_heading(n, lang)` — localized chapter titles
+- `get_chapter_prompt_template(lang)` — localized LLM writing prompt
+- `register_language()` — add new languages at runtime
+- Each language has translations, chapter headings, and a prompt template
+- Designed for West African university context (Nigerian languages included)
+
+### Bug Fix
+- Fixed `interface.py` syntax errors: 5 broken multi-line f-strings and CR character corruption from GitHub API encoding
+- Added dispatch entries for all new CLI commands: wizard, exportrefs, importrefs, similarity, compare, apareport
