@@ -402,6 +402,8 @@ function showLoading(msg) {{
          onclick="showLoading('Generating study files…')">🔨 Build Dataset</a>
       <a href="/session/{sid}/ch4data" class="btn btn-purple btn-sm"
          onclick="showLoading('Writing Ch4 with real data… ~45s')">📊 Ch4 + Data</a>
+      <a href="/session/{sid}/similarity" class="btn btn-ghost btn-sm">Similarity</a>
+      <a href="/session/{sid}/apareport" class="btn btn-ghost btn-sm" onclick="showLoading('Generating APA report...')">APA Report</a>
       <a href="/session/{sid}/citecheck" class="btn btn-ghost btn-sm">📊 Cite Check</a>
       <a href="/session/{sid}/pdfexport" class="btn btn-ghost btn-sm"
          onclick="showLoading('Exporting PDF…')">📄 PDF Export</a>
@@ -810,6 +812,56 @@ def pdf_export_route(sid):
         return send_file(str(path), as_attachment=True, download_name=f"{sid}_research_project.pdf")
     except Exception as exc:
         flash(f"PDF export failed: {exc}", "error")
+        return redirect(url_for("session_view", sid=sid))
+
+
+
+@app.route("/session/<sid>/similarity")
+def similarity_check(sid):
+    s = _load(sid)
+    if not s: return redirect(url_for("index"))
+    from research_engine.writer import estimate_session
+    reports = estimate_session(s)
+    parts = []
+    for n in sorted(reports.keys()):
+        r = reports[n]
+        color = "var(--green)" if r.estimated_similarity < 15 else "var(--gold)" if r.estimated_similarity < 35 else "var(--red)"
+        flags_html = ""
+        if r.flags:
+            for f in r.flags[:5]:
+                flags_html += '<div class="alert alert-error" style="margin-top:0.3rem;font-size:0.8rem"><b>[' + format(f.score, ".0%") + ']</b> ' + f.text[:70] + '...<br><span class="text-light">' + f.reason + '</span></div>'
+        parts.append('<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><span class="card-title">Chapter ' + str(n) + '</span><span style="font-size:1.4rem;font-weight:700;color:' + color + '">~' + format(r.estimated_similarity, ".0f") + '% <span style="font-size:0.9rem">(' + r.grade + ')</span></span></div><div class="text-sm text-light" style="margin-top:0.5rem">Sentences: ' + str(r.total_sentences) + ' | Flagged: ' + str(r.flagged_sentences) + ' | High risk: ' + str(r.high_risk_sentences) + '</div><div class="text-sm" style="margin-top:0.3rem">' + r.recommendation + '</div>' + flags_html + '</div>')
+    body = "".join(parts) or '<div class="card"><p class="text-light">No chapters written yet.</p></div>'
+    return render_template_string('<!DOCTYPE html><html><head><title>Similarity Check - RAT</title>' + BASE_STYLE + '</head><body>' + NAV + '<div class="container"><div class="page-title">Similarity Estimation</div><div class="page-sub">Heuristic estimate of likely Turnitin similarity</div>' + body + '<a href="/session/' + sid + '" class="btn btn-ghost" style="margin-top:1rem">Back</a></div></body></html>')
+
+
+@app.route("/session/<sid>/apareport")
+def apa_report_route(sid):
+    s = _load(sid)
+    if not s: return redirect(url_for("index"))
+    try:
+        from research_engine.exporters.apa_report import generate_apa_report
+        from research_engine.workflow import Pipeline
+        import importlib.util
+        study_dir = ROOT / "studies" / ("project_" + sid)
+        if not study_dir.exists():
+            flash("No study directory found. Run Build Dataset first.", "error")
+            return redirect(url_for("session_view", sid=sid))
+        run_path = study_dir / "run.py"
+        if run_path.exists():
+            spec = importlib.util.spec_from_file_location("run", str(run_path))
+            runmod = importlib.util.module_from_spec(spec); spec.loader.exec_module(runmod)
+            pipeline = Pipeline(study_dir, output_dir=OUTPUT_DIR / ("project_" + sid), seed=42,
+                              ordinal_maps=runmod.ORDINAL_MAPS, spss_maps=runmod.SPSS_MAPS,
+                              crosstab_pairs=runmod.CROSSTAB_PAIRS)
+        else:
+            pipeline = Pipeline(study_dir, output_dir=OUTPUT_DIR / ("project_" + sid), seed=42)
+        pipeline.analyse()
+        apa = generate_apa_report(pipeline, session=s)
+        safe_text = apa.full_text.replace("<", "&lt;").replace(">", "&gt;")
+        return render_template_string('<!DOCTYPE html><html><head><title>APA Report - RAT</title>' + BASE_STYLE + '</head><body>' + NAV + '<div class="container"><div class="page-title">APA Statistical Report</div><div class="page-sub">' + str(apa.word_count) + ' words - APA 7th edition format</div><div class="card" style="line-height:1.8;font-size:0.9rem;white-space:pre-wrap">' + safe_text + '</div><a href="/session/' + sid + '" class="btn btn-ghost" style="margin-top:1rem">Back</a></div></body></html>')
+    except Exception as exc:
+        flash("APA report failed: " + str(exc), "error")
         return redirect(url_for("session_view", sid=sid))
 
 
