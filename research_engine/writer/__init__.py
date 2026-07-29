@@ -82,3 +82,10 @@ from research_engine.writer.citation_diversity import (
     score_citation_diversity, score_session, suggest_improvements,
     CitationDiversityReport,
 )
+from research_engine.writer.similarity_estimator import (
+    estimate_similarity, estimate_session, flag_generic_sentences,
+    SimilarityReport,
+)
+from research_engine.writer.study_comparison import (
+    compare_sessions, render_comparison_table, ComparisonReport,
+)
