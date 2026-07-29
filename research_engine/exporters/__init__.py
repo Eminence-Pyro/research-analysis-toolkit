@@ -22,3 +22,4 @@ __all__ = [
     "export_excel", "export_raw_csv", "export_spss", "export_word",
 ]
 from research_engine.exporters.spss_exporter import export_spss_syntax
+from research_engine.exporters.pdf_exporter import export_project_pdf
