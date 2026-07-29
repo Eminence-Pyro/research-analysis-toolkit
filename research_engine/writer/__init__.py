@@ -89,3 +89,11 @@ from research_engine.writer.similarity_estimator import (
 from research_engine.writer.study_comparison import (
     compare_sessions, render_comparison_table, ComparisonReport,
 )
+from research_engine.writer.apa_formatter import (
+    format_apa_reference, format_apa_reference_list,
+    build_apa_reference, parse_apa_reference,
+)
+from research_engine.writer.reference_manager import (
+    export_bibtex, export_ris, import_bibtex, import_ris,
+    export_to_zotero, export_to_mendeley,
+)
