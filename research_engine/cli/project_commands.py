@@ -685,3 +685,76 @@ def cmd_project_syncspss(args, project_root: Path) -> int:
     print(green("  ✅ Chapter 3 instrument section updated"))
     print(dim(f"  Preview: {methods[:200]}…"))
     return 0
+
+# ══════════════════════════════════════════════════════════════
+# project citecheck  (Tier 2 — citation diversity scoring)
+# ══════════════════════════════════════════════════════════════
+
+def cmd_project_citecheck(args, project_root: Path) -> int:
+    from research_engine.writer import score_session, suggest_improvements
+
+    session = _load_session(project_root, args.session)
+    if session is None: return 1
+
+    print(gold("\n  📊 Citation Diversity Report\n"))
+    reports = score_session(session)
+
+    for n in sorted(reports.keys()):
+        r = reports[n]
+        print(f"  Chapter {n}: Score {r.score:.0f}/100 ({r.grade})")
+        print(f"    Citations: {r.total_citations} | Unique authors: {r.unique_authors} | "
+              f"Per 200 words: {r.citations_per_200:.2f}")
+        if r.dominant_author:
+            print(f"    Dominant: {r.dominant_author} ({r.max_author_share*100:.0f}%)")
+        for issue in r.issues:
+            print(yellow(f"    ⚠  {issue}"))
+        print()
+
+    # Overall suggestions
+    all_issues = any(r.issues for r in reports.values())
+    if all_issues:
+        print(bold("  Suggestions:"))
+        for n in sorted(reports.keys()):
+            r = reports[n]
+            if r.issues:
+                for s in suggest_improvements(r)[:2]:
+                    print(dim(f"    Ch{n}: {s}"))
+    else:
+        print(green("  ✅ All chapters have healthy citation diversity."))
+    return 0
+
+
+# ══════════════════════════════════════════════════════════════
+# project pdfexport  (Tier 2 — PDF export)
+# ══════════════════════════════════════════════════════════════
+
+def cmd_project_pdfexport(args, project_root: Path) -> int:
+    from research_engine.exporters.pdf_exporter import export_project_pdf
+    from research_engine.writer import generate_references
+
+    session = _load_session(project_root, args.session)
+    if session is None: return 1
+
+    api_key  = os.environ.get("OPENAI_API_KEY", "")
+    out_dir  = project_root / "output" / f"project_{session.session_id}"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / f"{session.session_id}_project.pdf"
+
+    print(gold("\n  📄 Exporting project as PDF…"))
+
+    refs = None
+    if session.chapters:
+        refs = generate_references(session, api_key=api_key)
+
+    try:
+        result = export_project_pdf(session, out_path, reference_list=refs)
+        size_kb = result.stat().st_size // 1024
+        print(green(f"  ✅ PDF exported: {result.name}  ({size_kb} KB)"))
+        print(dim(f"  Location: {result}"))
+        total_wc = sum(ch.word_count for ch in session.chapters.values())
+        print(dim(f"  Chapters: {len(session.chapters)} | Total words: ~{total_wc:,}"))
+    except Exception as exc:
+        print(red(f"  ✗ Export failed: {exc}"))
+        import traceback; traceback.print_exc()
+        return 1
+    return 0
