@@ -132,8 +132,7 @@ def cmd_run(args, studies_root: Path, output_root: Path) -> int:
     """Run the full pipeline for a study via the Pipeline orchestrator."""
     study_dir = studies_root / args.study
     if not study_dir.exists():
-        print(red(f"
-  Error: Study '{args.study}' not found in {studies_root}/"))
+        print(red(f"\nError: Study '{args.study}' not found in {studies_root}/"))
         print(dim(f"  Run 'python main.py list' to see available studies."))
         return 1
 
@@ -156,8 +155,7 @@ def cmd_run(args, studies_root: Path, output_root: Path) -> int:
     )
 
     # Stream progress
-    print(f"
-  Running pipeline for: {bold(args.study)}  (seed={args.seed})")
+    print(f"\nRunning pipeline for: {bold(args.study)}  (seed={args.seed})")
     steps = [
         ("Loading study configuration",    pipeline.load),
         ("Generating dataset",              pipeline.generate),
@@ -166,7 +164,7 @@ def cmd_run(args, studies_root: Path, output_root: Path) -> int:
         ("Exporting files",                 pipeline.export),
     ]
     for label, fn in steps:
-        print(f"  {dim('..')} {label}", end="", flush=True)
+        print(f"  {dim('..')} {label}", end="\r", flush=True)
         fn()
         print(f"  {green('✓')}  {label}             ")
 
@@ -175,19 +173,16 @@ def cmd_run(args, studies_root: Path, output_root: Path) -> int:
     elapsed = time.time() - t
 
     # Print results
-    print(f"
-  {bold('Validation:')} {green(pipeline.report.summary())}")
+    print(f"\n{bold('Validation:')} {green(pipeline.report.summary())}")
     for check in pipeline.report.checks:
         icon = {"pass": green("  ✓"), "warn": yellow("  ⚠"), "error": red("  ✗")}[check.status]
         print(f"{icon}  {check.message}")
 
-    print(f"
-  {bold('Output files:')}")
+    print(f"\n{bold('Output files:')}")
     for f in pipeline.output_files:
         print(f"    {green('→')} {f.name}")
 
-    print(f"
-  {dim(f'Total: {elapsed:.1f}s')}")
+    print(f"\n{dim(f'Total: {elapsed:.1f}s')}")
     return 0
 
 
