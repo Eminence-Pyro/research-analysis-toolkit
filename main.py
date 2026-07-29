@@ -22,6 +22,7 @@ publication-ready documents.
     python main.py project status --session SESSION_ID
     python main.py project export --session SESSION_ID --format docx
     python main.py project list
+    python main.py project wizard    # guided setup
 
 ── Quick Start ───────────────────────────────────────────────────────────────
     # 1. Upload your project guideline and start a new session
