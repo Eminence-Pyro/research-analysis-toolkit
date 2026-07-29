@@ -1374,3 +1374,74 @@ project syncspss --session SID
 /session/<id>/feedback    — Supervisor feedback form (paste or upload)
 /session/<id>/syncspss    — SPSS ↔ Ch3 sync trigger
 ```
+
+
+---
+
+## Entry #021 — Tier 2 Final: OCR, Citation Diversity, PDF Export
+
+**Date:** July 2026
+**Sprint:** 2.3 — Tier 2 Final
+**Status:** ✅ Complete
+
+### What Was Built
+
+Three remaining Tier 2 features, completing the Tier 2 roadmap:
+
+**1. OCR for Scanned PDFs** (`writer/ocr_parser.py`)
+- `is_scanned_pdf()` — detects image-only PDFs (avg <50 chars/page from pdfplumber)
+- `ocr_pdf()` — converts PDF pages to images via `pdf2image`, then runs Tesseract
+- `extract_text_with_ocr()` — transparent fallback: tries text layer first, OCR if too short
+- Integrated into `guideline_parser.extract_text()` — all callers get OCR automatically
+- Requires Tesseract binary + `pytesseract` + `pdf2image` (optional, only needed for scanned PDFs)
+
+**2. Citation Diversity Scoring** (`writer/citation_diversity.py`)
+- `score_citation_diversity(text)` — analyses a text block for:
+  - Citation density (per 200 words)
+  - Author diversity (max single-author share)
+  - Repeated citations within sections (same author 3+ times)
+  - Uncited long sections (200+ words with 0 citations in lit review sections)
+- Produces a 0–100 score with letter grade (A–F)
+- `suggest_improvements(report)` — human-readable suggestions for fixing issues
+- `score_session(session)` — scores all chapters at once
+- CLI: `python main.py project citecheck --session SID`
+- Web: `/session/<id>/citecheck` — visual report card per chapter
+
+**3. PDF Export** (`exporters/pdf_exporter.py`)
+- `export_project_pdf(session, output_path, reference_list)` — reportlab-based
+- Title page with institution, department, title, student name, year
+- Abstract page with keywords
+- All chapters with proper heading hierarchy (Times Roman, 1.5 spacing)
+- Reference list with hanging indent
+- Page numbers in footer
+- CLI: `python main.py project pdfexport --session SID`
+- Web: `/session/<id>/pdfexport` — direct download
+
+### Architecture Notes
+
+- OCR is fully transparent — `extract_text()` in guideline_parser now routes through `extract_text_with_ocr()` which tries text extraction first and only falls back to OCR when needed. No code changes required by callers.
+- Citation diversity uses the same regex patterns as `reference_generator.py` for consistency.
+- PDF exporter mirrors the DOCX exporter's structure but uses reportlab's `SimpleDocTemplate` with `Paragraph` flowables.
+
+### Updated CLI Commands
+```
+project citecheck  --session SID          # citation diversity report
+project pdfexport  --session SID          # export as PDF
+```
+
+### Updated Web Routes
+```
+/session/<id>/citecheck    — visual citation report card
+/session/<id>/pdfexport   — download PDF
+```
+
+### Tier 2 Status: ✅ ALL COMPLETE
+
+All Tier 2 items from the recommendations list are now implemented:
+- ✅ Web UI (Flask)
+- ✅ Scanned PDF support (Tesseract OCR)
+- ✅ Plagiarism-safe citation diversity scoring
+- ✅ SPSS ↔ Chapter 3 sync
+- ✅ Multi-chapter compressed context (MSc/PhD)
+- ✅ Supervisor feedback loop
+- ✅ PDF export (reportlab)
